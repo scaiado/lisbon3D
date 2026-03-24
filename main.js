@@ -364,3 +364,4 @@ document.getElementById('pov-toggle')?.addEventListener('click', () => {
 
 console.log('🗺️ Lisbon 3D Explorer initialized');
 console.log('   R = Reset view | P = Toggle POV | WASD = Walk (in POV)');
+// Trigger rebuild
