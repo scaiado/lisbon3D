@@ -204,13 +204,18 @@ function addDemoBuildings() {
 
 // POV Walking Mode
 let isPOVMode = false;
-let walkSpeed = 0.0001;
+let walkSpeed = 0.0002; // Increased for better movement
 let keys = { w: false, a: false, s: false, d: false };
 let animationFrameId = null;
 
 function startPOVLoop() {
+  console.log('🎮 POV Loop starting - WASD active');
+  
   function updatePosition() {
-    if (!isPOVMode) return;
+    if (!isPOVMode) {
+      console.log('🎮 POV Loop stopping');
+      return;
+    }
     
     const center = map.getCenter();
     let lng = center.lng;
@@ -243,6 +248,7 @@ function startPOVLoop() {
     
     if (moved) {
       map.setCenter([lng, lat]);
+      // console.log(`🚶 Moving: ${lng.toFixed(5)}, ${lat.toFixed(5)}`);
     }
     
     animationFrameId = requestAnimationFrame(updatePosition);
@@ -308,11 +314,13 @@ function hidePOVInstructions() {
   }
 }
 
-// Keyboard controls
+// Keyboard controls - prevent default to ensure they work
 window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
   if (keys.hasOwnProperty(key)) {
     keys[key] = true;
+    e.preventDefault(); // Prevent scrolling with arrow keys
+    console.log(`🎮 Key pressed: ${key}`);
   }
   if (e.key === 'r' || e.key === 'R') {
     map.flyTo({ center: LISBON_CENTER, zoom: 15, pitch: 60, bearing: -20, duration: 1500 });
@@ -326,6 +334,7 @@ window.addEventListener('keyup', (e) => {
   const key = e.key.toLowerCase();
   if (keys.hasOwnProperty(key)) {
     keys[key] = false;
+    console.log(`🎮 Key released: ${key}`);
   }
 });
 
@@ -358,27 +367,29 @@ map.on('move', () => {
 document.getElementById('pov-toggle')?.addEventListener('click', () => {
   const btn = document.getElementById('pov-toggle');
   if (!isPOVMode) {
-    // Enter POV mode - street level with proper settings
+    console.log('🚶 Entering POV mode...');
+    
+    // Get current position to stay at same location
+    const currentCenter = map.getCenter();
+    
+    // Enter POV mode - TRUE street level
+    // Zoom 19 = ~1m per pixel = eye level
+    // Zoom 17 was too high (~100m view)
     map.easeTo({ 
-      zoom: 17,  // Slightly less zoomed in
-      pitch: 75, // Less steep to avoid rendering issues
+      center: [currentCenter.lng, currentCenter.lat], // Stay at current position
+      zoom: 19,  // True street level (was 17, too high)
+      pitch: 70, // Moderate pitch for natural view
       bearing: map.getBearing(), 
       duration: 1000 
     });
     
-    // Add terrain offset for eye level (1.6m above ground)
-    // This keeps us above the terrain but not inside buildings
-    if (map.getTerrain()) {
-      // If terrain is enabled, we're already at correct height
-      console.log('🚶 POV Mode: Terrain active, height auto-adjusted');
-    }
-    
     showPOVInstructions();
     startPOVLoop();
-    if (btn) btn.textContent = '🚁 Exit POV Mode';
+    if (btn) btn.textContent = '🚁 Exit Street View';
     isPOVMode = true;
-    console.log('🚶 POV Walking Mode ON — Use WASD to walk | Mouse to look');
+    console.log('🚶 Street View ON — Click map first, then WASD to walk');
   } else {
+    console.log('🚁 Exiting POV mode...');
     // Exit POV mode - aerial view
     map.easeTo({ 
       zoom: 15, 
@@ -387,9 +398,9 @@ document.getElementById('pov-toggle')?.addEventListener('click', () => {
     });
     hidePOVInstructions();
     stopPOVLoop();
-    if (btn) btn.textContent = '🚶 Enter POV Mode';
+    if (btn) btn.textContent = '🚶 Enter Street View';
     isPOVMode = false;
-    console.log('🚁 Aerial View Mode ON');
+    console.log('🚁 Aerial View ON');
   }
 });
 
