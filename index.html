@@ -94,7 +94,40 @@
       P = Exit drive mode
     </p>
   </div>
+
+  <!-- Speedometer -->
+  <div id="speedometer" style="display: none; position: fixed; bottom: 30px; left: 30px; background: rgba(0, 0, 0, 0.85); color: #00ff88; padding: 15px 25px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; z-index: 1001; border: 2px solid #00ff88; box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);">
+    0 km/h
+  </div>
+
+  <!-- Score Display -->
+  <div id="score-display" style="display: none; position: fixed; top: 30px; right: 30px; background: rgba(0, 0, 0, 0.85); color: #ffd700; padding: 12px 20px; border-radius: 10px; font-family: -apple-system, sans-serif; font-size: 20px; font-weight: bold; z-index: 1001; border: 2px solid #ffd700; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);">
+    Score: 0
+  </div>
+
+  <!-- Checkpoint Popup -->
+  <div id="checkpoint-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 40px; border-radius: 16px; font-family: -apple-system, sans-serif; font-size: 24px; font-weight: bold; z-index: 2000; text-align: center; box-shadow: 0 10px 40px rgba(102, 126, 234, 0.5); animation: popupPulse 0.5s ease-out;">
+    <div style="font-size: 40px; margin-bottom: 10px;">🏁</div>
+    <div id="checkpoint-text">Checkpoint!</div>
+    <div style="font-size: 18px; opacity: 0.9; margin-top: 8px;">+<span id="checkpoint-points">500</span> points</div>
+  </div>
+
+  <style>
+    @keyframes popupPulse {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes popupFade {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+    }
+    .checkpoint-fade {
+      animation: popupFade 0.5s ease-in forwards !important;
+    }
+  </style>
   
-  <script type="module" src="./main.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.js"></script>
+  <script src="./main.js"></script>
 </body>
 </html>

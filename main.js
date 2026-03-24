@@ -12,6 +12,26 @@ let keys = { w: false, a: false, s: false, d: false };
 let animationFrameId = null;
 let carMarker = null;
 
+// Game State
+let gameState = {
+  speed: 0,           // Current speed (0-100 km/h scale)
+  maxSpeed: 80,       // Max speed in km/h
+  acceleration: 0.5,  // Speed increase per frame when accelerating
+  braking: 0.8,       // Speed decrease per frame when braking
+  friction: 0.3,      // Natural deceleration
+  score: 0,
+  distance: 0,        // Distance traveled in meters
+  lastPosition: null,
+  visitedLandmarks: new Set()
+};
+
+// Landmarks
+const LANDMARKS = [
+  { name: 'São Jorge Castle', coords: [-9.1336, 38.7129], color: '#9b59b6', points: 500 },
+  { name: 'Belém Tower', coords: [-9.2158, 38.6916], color: '#3498db', points: 500 },
+  { name: 'Christ the King', coords: [-9.1703, 38.6789], color: '#f39c12', points: 500 }
+];
+
 // Initialize the map
 const map = new maplibregl.Map({
   container: 'map',
@@ -118,13 +138,7 @@ map.on('load', () => {
   }
   
   // Landmark markers
-  const landmarks = [
-    { name: 'São Jorge Castle', coords: [-9.1336, 38.7129], color: '#9b59b6' },
-    { name: 'Belém Tower', coords: [-9.2158, 38.6916], color: '#3498db' },
-    { name: 'Christ the King', coords: [-9.1703, 38.6789], color: '#f39c12' }
-  ];
-  
-  landmarks.forEach(lm => {
+  LANDMARKS.forEach(lm => {
     new maplibregl.Marker({ color: lm.color })
       .setLngLat(lm.coords)
       .setPopup(new maplibregl.Popup().setHTML(`<b>${lm.name}</b>`))
@@ -136,39 +150,62 @@ map.on('load', () => {
 function createCarMarker() {
   const el = document.createElement('div');
   el.style.cssText = `
-    width: 30px;
-    height: 40px;
-    background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
-    border-radius: 8px 8px 4px 4px;
-    border: 2px solid #fff;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.6);
+    width: 32px;
+    height: 44px;
     position: relative;
-    z-index: 1000;
+    opacity: 1;
   `;
+  
+  // Create the car body with animation (inside the marker, so transform doesn't conflict with MapLibre's positioning)
+  const carBody = document.createElement('div');
+  carBody.style.cssText = `
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, #ff4444 0%, #cc0000 100%);
+    border-radius: 10px 10px 6px 6px;
+    border: 3px solid #fff;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.9), 0 0 40px rgba(255, 68, 68, 0.5), 0 4px 15px rgba(0, 0, 0, 0.4);
+    position: relative;
+    animation: carPulse 1.2s ease-in-out infinite;
+  `;
+  
+  // Add pulse animation style
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes carPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 68, 68, 0.9), 0 0 40px rgba(255, 68, 68, 0.5), 0 4px 15px rgba(0, 0, 0, 0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 30px rgba(255, 68, 68, 1), 0 0 60px rgba(255, 68, 68, 0.7), 0 6px 20px rgba(0, 0, 0, 0.5); transform: scale(1.05); }
+    }
+  `;
+  document.head.appendChild(style);
+  
   // Windshield
-  el.innerHTML = `
+  carBody.innerHTML = `
     <div style="
       position: absolute;
       top: 6px;
       left: 50%;
       transform: translateX(-50%);
-      width: 20px;
-      height: 12px;
-      background: #2c3e50;
-      border-radius: 4px;
-      border: 1px solid #34495e;
+      width: 22px;
+      height: 14px;
+      background: #1a1a2e;
+      border-radius: 5px;
+      border: 2px solid #444;
     "></div>
     <div style="
       position: absolute;
-      bottom: 4px;
+      bottom: 5px;
       left: 50%;
       transform: translateX(-50%);
-      width: 16px;
-      height: 8px;
-      background: #f39c12;
-      border-radius: 2px;
+      width: 18px;
+      height: 10px;
+      background: #ffaa00;
+      border-radius: 3px;
+      box-shadow: 0 0 8px #ffaa00;
     "></div>
   `;
+  
+  el.appendChild(carBody);
   return el;
 }
 
@@ -176,15 +213,32 @@ function createCarMarker() {
 function startPOVDrive() {
   console.log('🚗 Starting POV drive mode');
   
+  // Reset game state
+  gameState.speed = 0;
+  gameState.score = 0;
+  gameState.distance = 0;
+  gameState.visitedLandmarks.clear();
+  gameState.lastPosition = null;
+  
+  // Show UI
+  document.getElementById('speedometer').style.display = 'block';
+  document.getElementById('score-display').style.display = 'block';
+  updateUI();
+  
   // Create car marker at current position
   if (!carMarker) {
     carMarker = new maplibregl.Marker({
       element: createCarMarker(),
-      anchor: 'center'
+      anchor: 'center',
+      pitchAlignment: 'viewport',
+      rotationAlignment: 'viewport'
     })
       .setLngLat(map.getCenter())
       .addTo(map);
   }
+  
+  // Set initial position for distance tracking
+  gameState.lastPosition = map.getCenter();
   
   // Set camera to follow the car
   map.setZoom(18);
@@ -200,30 +254,41 @@ function startPOVDrive() {
     let moved = false;
     
     const bearing = map.getBearing();
-    const speed = 0.00001; // Car speed
+    
+    // Handle acceleration and braking
+    if (keys.w) {
+      gameState.speed = Math.min(gameState.speed + gameState.acceleration, gameState.maxSpeed);
+    } else if (keys.s) {
+      gameState.speed = Math.max(gameState.speed - gameState.braking, 0);
+    } else {
+      // Natural friction
+      gameState.speed = Math.max(gameState.speed - gameState.friction, 0);
+    }
+    
+    // Convert speed to coordinate movement (scaled for map coords)
+    const baseSpeed = 0.000005; // Base movement unit
+    const speedFactor = (gameState.speed / gameState.maxSpeed);
+    const moveSpeed = baseSpeed * (0.2 + speedFactor * 1.8); // Min 20% speed even at low km/h
     
     // Forward/Back
-    if (keys.w) {
+    if (gameState.speed > 0 && keys.w) {
       const rad = (bearing * Math.PI) / 180;
-      lng += Math.sin(rad) * speed;
-      lat += Math.cos(rad) * speed;
-      moved = true;
-    }
-    if (keys.s) {
-      const rad = (bearing * Math.PI) / 180;
-      lng -= Math.sin(rad) * speed * 0.5;
-      lat -= Math.cos(rad) * speed * 0.5;
+      lng += Math.sin(rad) * moveSpeed;
+      lat += Math.cos(rad) * moveSpeed;
       moved = true;
     }
     
-    // Turn (A/D change bearing, not strafe)
-    if (keys.a) {
-      turn = -2; // Turn left 2 degrees
-      moved = true;
-    }
-    if (keys.d) {
-      turn = 2; // Turn right 2 degrees
-      moved = true;
+    // Turn (A/D change bearing, not strafe) - only when moving
+    if (gameState.speed > 1) {
+      const turnSpeed = 1 + (gameState.speed / gameState.maxSpeed) * 2; // Faster turning at higher speeds
+      if (keys.a) {
+        turn = -turnSpeed;
+        moved = true;
+      }
+      if (keys.d) {
+        turn = turnSpeed;
+        moved = true;
+      }
     }
     
     if (moved) {
@@ -237,7 +302,16 @@ function startPOVDrive() {
       if (turn !== 0) {
         map.setBearing(bearing + turn);
       }
+      
+      // Track distance and score
+      trackDistance([lng, lat]);
+      
+      // Check landmarks
+      checkLandmarks([lng, lat]);
     }
+    
+    // Update UI
+    updateUI();
     
     animationFrameId = requestAnimationFrame(driveLoop);
   }
@@ -253,8 +327,94 @@ function stopPOVDrive() {
   if (carMarker) {
     carMarker.getElement().style.display = 'none';
   }
+  // Hide UI
+  document.getElementById('speedometer').style.display = 'none';
+  document.getElementById('score-display').style.display = 'none';
   // Reset to aerial view
   map.easeTo({ zoom: 15, pitch: 60, duration: 1000 });
+}
+
+// Game Mechanics Functions
+
+// Calculate distance between two lat/lng points in meters
+function haversineDistance(coord1, coord2) {
+  const R = 6371000; // Earth's radius in meters
+  const lat1 = coord1[1] * Math.PI / 180;
+  const lat2 = coord2[1] * Math.PI / 180;
+  const deltaLat = (coord2[1] - coord1[1]) * Math.PI / 180;
+  const deltaLng = (coord2[0] - coord1[0]) * Math.PI / 180;
+
+  const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+// Track distance traveled and update score
+function trackDistance(currentPos) {
+  if (gameState.lastPosition && currentPos) {
+    const dist = haversineDistance(gameState.lastPosition, currentPos);
+    if (!isNaN(dist) && isFinite(dist)) {
+      gameState.distance += dist;
+      // 1 point per meter traveled
+      gameState.score += Math.floor(dist);
+    }
+  }
+  gameState.lastPosition = [...currentPos];
+}
+
+// Check if near landmarks
+function checkLandmarks(currentPos) {
+  LANDMARKS.forEach(landmark => {
+    if (gameState.visitedLandmarks.has(landmark.name)) return;
+    
+    const distance = haversineDistance(currentPos, landmark.coords);
+    
+    if (distance <= 100) { // Within 100 meters
+      gameState.visitedLandmarks.add(landmark.name);
+      gameState.score += landmark.points;
+      showCheckpointPopup(landmark.name, landmark.points);
+    }
+  });
+}
+
+// Show checkpoint popup
+function showCheckpointPopup(landmarkName, points) {
+  const popup = document.getElementById('checkpoint-popup');
+  const textEl = document.getElementById('checkpoint-text');
+  const pointsEl = document.getElementById('checkpoint-points');
+  
+  textEl.textContent = `Checkpoint: ${landmarkName}!`;
+  pointsEl.textContent = points;
+  
+  popup.classList.remove('checkpoint-fade');
+  popup.style.display = 'block';
+  
+  // Fade out after 2 seconds
+  setTimeout(() => {
+    popup.classList.add('checkpoint-fade');
+    setTimeout(() => {
+      popup.style.display = 'none';
+    }, 500);
+  }, 2000);
+}
+
+// Update UI elements
+function updateUI() {
+  const speedometer = document.getElementById('speedometer');
+  const scoreDisplay = document.getElementById('score-display');
+  
+  // Ensure score is always a valid number
+  if (isNaN(gameState.score)) gameState.score = 0;
+  
+  if (speedometer) {
+    speedometer.textContent = `${Math.round(gameState.speed || 0)} km/h`;
+  }
+  if (scoreDisplay) {
+    scoreDisplay.textContent = `Score: ${Math.floor(gameState.score || 0)}`;
+  }
 }
 
 // Keyboard handling
