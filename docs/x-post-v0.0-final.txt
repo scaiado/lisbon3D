@@ -1,0 +1,16 @@
+🚨 Just shipped a 3D map of Lisbon
+
+🔗 https://lisbon.tinylittlelab.com
+
+Using ONLY open data:
+• DGT LiDAR terrain (Portuguese gov)
+• MapTiler 3D buildings  
+• OpenStreetMap
+• MapLibre GL JS (open source)
+
+Total cost: $0
+Build time: 37 minutes
+
+v0.0 is LIVE 🧵👇
+
+#buildinpublic #opensource #lisbon #maps #3d #webgl #tinyinitlab

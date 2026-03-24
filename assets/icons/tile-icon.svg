@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <rect width="180" height="180" rx="40" fill="#1E4D6B"/>
+  <defs>
+    <pattern id="tilePattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+      <rect width="30" height="30" fill="#1E4D6B"/>
+      <circle cx="15" cy="15" r="5" fill="#4A90A4" opacity="0.5"/>
+      <circle cx="0" cy="0" r="4" fill="#4A90A4" opacity="0.3"/>
+      <circle cx="30" cy="0" r="4" fill="#4A90A4" opacity="0.3"/>
+      <circle cx="0" cy="30" r="4" fill="#4A90A4" opacity="0.3"/>
+      <circle cx="30" cy="30" r="4" fill="#4A90A4" opacity="0.3"/>
+      <rect x="13" y="0" width="4" height="30" fill="#4A90A4" opacity="0.15"/>
+      <rect x="0" y="13" width="30" height="4" fill="#4A90A4" opacity="0.15"/>
+    </pattern>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#tilePattern)"/>
+  
+  <g transform="translate(90, 100)">
+    <ellipse cx="0" cy="45" rx="55" ry="15" fill="#0F2D3D" opacity="0.4"/>
+    
+    <path d="M-42 45 L-42 -8 L-30 -20 L-18 -8 L-18 45 Z" fill="#E8DDD4"/>
+    <path d="M-42 -8 L-30 -20 L-18 -8" fill="#D4C4B5"/>
+    <rect x="-38" y="0" width="7" height="10" rx="1" fill="#4A90A4"/>
+    <rect x="-26" y="0" width="7" height="10" rx="1" fill="#4A90A4"/>
+    <rect x="-38" y="18" width="7" height="10" rx="1" fill="#4A90A4"/>
+    <rect x="-26" y="18" width="7" height="10" rx="1" fill="#4A90A4"/>
+    
+    <path d="M-14 45 L-14 -28 L0 -40 L14 -28 L14 45 Z" fill="#F5F0EB"/>
+    <path d="M-14 -28 L0 -40 L14 -28" fill="#E8DDD4"/>
+    <rect x="-10" y="-14" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="-1" y="-14" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="8" y="-14" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="-10" y="5" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="-1" y="5" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="8" y="5" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="-10" y="24" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    <rect x="-1" y="24" width="6" height="9" rx="1" fill="#1E4D6B"/>
+    
+    <path d="M18 45 L18 -10 L30 -22 L42 -10 L42 45 Z" fill="#E8DDD4"/>
+    <path d="M18 -10 L30 -22 L42 -10" fill="#D4C4B5"/>
+    <path d="M21 -2 Q25 -6 29 -2 L29 8 L21 8 Z" fill="#C75B39"/>
+    <path d="M33 -2 Q37 -6 41 -2 L41 8 L33 8 Z" fill="#C75B39"/>
+    <path d="M21 16 Q25 12 29 16 L29 26 L21 26 Z" fill="#C75B39"/>
+    <path d="M33 16 Q37 12 41 16 L41 26 L33 26 Z" fill="#C75B39"/>
+  </g>
+</svg>

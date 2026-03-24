@@ -1,0 +1,16 @@
+🚨 Just built a 3D map of Lisbon in 30 minutes
+
+Using ONLY open data:
+• DGT LiDAR terrain (Portuguese gov)
+• MapTiler 3D buildings
+• OpenStreetMap base
+• MapLibre GL JS (open source)
+
+Total cost: $0
+Stack: 100% open source
+
+v0.0 is LIVE 🧵👇
+
+[image attached]
+
+#buildinpublic #opensource #lisbon #maps #3d #webgl

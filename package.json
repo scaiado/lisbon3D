@@ -1,0 +1,17 @@
+{
+  "name": "lisbon-3d-web",
+  "version": "0.1.0",
+  "description": "3D map of Lisbon using MapLibre GL JS",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "maplibre-gl": "^5.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
