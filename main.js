@@ -116,6 +116,35 @@ map.on('load', () => {
         }
       });
       console.log('🏢 3D buildings layer added from MapTiler');
+      
+      // Add roads layer for navigation
+      try {
+        map.addLayer({
+          id: 'roads',
+          type: 'line',
+          source: 'buildings',
+          'source-layer': 'road',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+            'visibility': 'visible'
+          },
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 1,
+              14, 2,
+              16, 4,
+              18, 6
+            ],
+            'line-opacity': 0.8
+          }
+        });
+        console.log('🛣️ Roads layer added');
+      } catch (e) {
+        console.warn('Roads layer failed:', e.message);
+      }
     } catch (e) {
       console.warn('Buildings from MapTiler failed:', e.message);
     }
@@ -225,30 +254,37 @@ function startPOVLoop() {
     const bearing = map.getBearing();
     const bearingRad = (bearing * Math.PI) / 180;
     
+    // Increased speed for better feel at zoom 17
+    const speed = 0.00002; // ~2 meters at zoom 17
+    
     if (keys.w) {
-      lng += Math.sin(bearingRad) * walkSpeed;
-      lat += Math.cos(bearingRad) * walkSpeed;
+      lng += Math.sin(bearingRad) * speed;
+      lat += Math.cos(bearingRad) * speed;
       moved = true;
     }
     if (keys.s) {
-      lng -= Math.sin(bearingRad) * walkSpeed;
-      lat -= Math.cos(bearingRad) * walkSpeed;
+      lng -= Math.sin(bearingRad) * speed;
+      lat -= Math.cos(bearingRad) * speed;
       moved = true;
     }
     if (keys.a) {
-      lng -= Math.cos(bearingRad) * walkSpeed * 0.5;
-      lat += Math.sin(bearingRad) * walkSpeed * 0.5;
+      lng -= Math.cos(bearingRad) * speed * 0.5;
+      lat += Math.sin(bearingRad) * speed * 0.5;
       moved = true;
     }
     if (keys.d) {
-      lng += Math.cos(bearingRad) * walkSpeed * 0.5;
-      lat -= Math.sin(bearingRad) * walkSpeed * 0.5;
+      lng += Math.cos(bearingRad) * speed * 0.5;
+      lat -= Math.sin(bearingRad) * speed * 0.5;
       moved = true;
     }
     
     if (moved) {
-      map.setCenter([lng, lat]);
-      // console.log(`🚶 Moving: ${lng.toFixed(5)}, ${lat.toFixed(5)}`);
+      // Use easeTo for smooth movement (preserves zoom/pitch)
+      map.easeTo({
+        center: [lng, lat],
+        duration: 50,  // 50ms = smooth
+        easing: (t) => t  // Linear
+      });
     }
     
     animationFrameId = requestAnimationFrame(updatePosition);
@@ -372,22 +408,27 @@ document.getElementById('pov-toggle')?.addEventListener('click', () => {
     // Get current position to stay at same location
     const currentCenter = map.getCenter();
     
-    // Enter POV mode - TRUE street level
-    // Zoom 19 = ~1m per pixel = eye level
-    // Zoom 17 was too high (~100m view)
+    // Enter POV mode - TRUE street view (like Google Street View)
+    // Zoom 17 = ~1m per pixel, good for street level
+    // Pitch 0 = Looking forward (not down)
     map.easeTo({ 
-      center: [currentCenter.lng, currentCenter.lat], // Stay at current position
-      zoom: 19,  // True street level (was 17, too high)
-      pitch: 70, // Moderate pitch for natural view
+      center: [currentCenter.lng, currentCenter.lat],
+      zoom: 17,  // Street level (was 19, too close)
+      pitch: 0,  // Look forward like a car (was 70/75, looking down)
       bearing: map.getBearing(), 
       duration: 1000 
     });
+    
+    // Show roads layer if not visible
+    if (map.getLayer('roads')) {
+      map.setLayoutProperty('roads', 'visibility', 'visible');
+    }
     
     showPOVInstructions();
     startPOVLoop();
     if (btn) btn.textContent = '🚁 Exit Street View';
     isPOVMode = true;
-    console.log('🚶 Street View ON — Click map first, then WASD to walk');
+    console.log('🚶 Street View ON — WASD to drive, mouse to steer');
   } else {
     console.log('🚁 Exiting POV mode...');
     // Exit POV mode - aerial view
