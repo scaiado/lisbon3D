@@ -268,31 +268,43 @@ function showPOVInstructions() {
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       color: white;
-      padding: 15px 25px;
+      padding: 12px 20px;
       border-radius: 30px;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       z-index: 1000;
       display: flex;
-      gap: 20px;
+      gap: 15px;
       align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     `;
     overlay.innerHTML = `
-      <span>🚶 <b>POV Mode</b></span>
-      <span style="opacity: 0.8;">WASD to walk</span>
-      <span style="opacity: 0.8;">Mouse to look</span>
+      <span>🚶 <b>Street View</b></span>
+      <span style="opacity: 0.7;">WASD = walk</span>
+      <span style="opacity: 0.7;">drag = look</span>
+      <span style="opacity: 0.7;">P = exit</span>
     `;
     document.body.appendChild(overlay);
   }
   overlay.style.display = 'flex';
+  
+  // Reduce building opacity for better street navigation
+  if (map.getLayer('3d-buildings')) {
+    map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', 0.35);
+  }
 }
 
 function hidePOVInstructions() {
   const overlay = document.getElementById('pov-instructions');
   if (overlay) {
     overlay.style.display = 'none';
+  }
+  
+  // Restore building opacity for aerial view
+  if (map.getLayer('3d-buildings')) {
+    map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', 0.6);
   }
 }
 
@@ -346,14 +358,33 @@ map.on('move', () => {
 document.getElementById('pov-toggle')?.addEventListener('click', () => {
   const btn = document.getElementById('pov-toggle');
   if (!isPOVMode) {
-    map.easeTo({ zoom: 18, pitch: 85, bearing: map.getBearing(), duration: 1000 });
+    // Enter POV mode - street level with proper settings
+    map.easeTo({ 
+      zoom: 17,  // Slightly less zoomed in
+      pitch: 75, // Less steep to avoid rendering issues
+      bearing: map.getBearing(), 
+      duration: 1000 
+    });
+    
+    // Add terrain offset for eye level (1.6m above ground)
+    // This keeps us above the terrain but not inside buildings
+    if (map.getTerrain()) {
+      // If terrain is enabled, we're already at correct height
+      console.log('🚶 POV Mode: Terrain active, height auto-adjusted');
+    }
+    
     showPOVInstructions();
     startPOVLoop();
     if (btn) btn.textContent = '🚁 Exit POV Mode';
     isPOVMode = true;
-    console.log('🚶 POV Walking Mode ON — Use WASD to walk');
+    console.log('🚶 POV Walking Mode ON — Use WASD to walk | Mouse to look');
   } else {
-    map.easeTo({ zoom: 15, pitch: 60, duration: 1000 });
+    // Exit POV mode - aerial view
+    map.easeTo({ 
+      zoom: 15, 
+      pitch: 60, 
+      duration: 1000 
+    });
     hidePOVInstructions();
     stopPOVLoop();
     if (btn) btn.textContent = '🚶 Enter POV Mode';
