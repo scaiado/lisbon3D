@@ -104,6 +104,38 @@
       cursor: not-allowed;
       transform: none;
     }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .controls {
+        bottom: 20px;
+        right: 10px;
+        left: 10px;
+        padding: 12px;
+        max-width: none;
+      }
+      
+      .controls input[type="range"] {
+        width: 100%;
+      }
+      
+      #pov-toggle {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 48px; /* Touch-friendly */
+      }
+      
+      .map-overlay {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 12px 15px;
+      }
+      
+      .map-overlay h1 {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
