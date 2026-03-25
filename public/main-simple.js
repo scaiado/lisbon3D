@@ -19,6 +19,13 @@ let lastTime = 0;
 // Input state
 const keys = { w: false, a: false, s: false, d: false };
 
+// Touch state for mobile
+let touchState = {
+  steering: 0,  // -1 (left) to 1 (right)
+  throttle: 0,  // 0 to 1
+  braking: 0    // 0 to 1
+};
+
 // Car state
 let carPosition = [...LISBON_CENTER];
 let carBearing = -20;
@@ -210,6 +217,178 @@ function setupInput() {
       keys[key] = false;
     }
   });
+  
+  // Setup touch controls for mobile
+  setupTouchControls();
+}
+
+function setupTouchControls() {
+  // Only setup on touch devices
+  if (!('ontouchstart' in window)) return;
+  
+  const mapContainer = document.getElementById('map');
+  if (!mapContainer) return;
+  
+  // Touch areas for drive mode
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let isTouching = false;
+  
+  mapContainer.addEventListener('touchstart', (e) => {
+    if (!isDriveMode) return;
+    
+    isTouching = true;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    
+    // Determine touch zone
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const touchX = touch.clientX;
+    const touchY = touch.clientY;
+    
+    // Bottom half = throttle/brake
+    if (touchY > height * 0.6) {
+      if (touchX < width * 0.3) {
+        // Left side = brake
+        touchState.braking = 1;
+      } else if (touchX > width * 0.7) {
+        // Right side = gas
+        touchState.throttle = 1;
+      }
+    }
+    
+    e.preventDefault();
+  }, { passive: false });
+  
+  mapContainer.addEventListener('touchmove', (e) => {
+    if (!isDriveMode || !isTouching) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    
+    // Steering based on horizontal swipe
+    const maxDelta = 100; // pixels for full steer
+    touchState.steering = Math.max(-1, Math.min(1, deltaX / maxDelta));
+    
+    e.preventDefault();
+  }, { passive: false });
+  
+  mapContainer.addEventListener('touchend', (e) => {
+    if (!isDriveMode) return;
+    
+    isTouching = false;
+    touchState.steering = 0;
+    touchState.throttle = 0;
+    touchState.braking = 0;
+    
+    e.preventDefault();
+  });
+  
+  // Create touch UI overlay
+  createTouchUI();
+}
+
+function createTouchUI() {
+  // Check if already exists
+  if (document.getElementById('touch-controls')) return;
+  
+  const touchUI = document.createElement('div');
+  touchUI.id = 'touch-controls';
+  touchUI.style.cssText = `
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 150px;
+    display: none;
+    z-index: 2000;
+    pointer-events: none;
+  `;
+  
+  touchUI.innerHTML = `
+    <div style="
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 80px;
+      height: 80px;
+      background: rgba(231, 76, 60, 0.6);
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      pointer-events: auto;
+      user-select: none;
+    " id="touch-brake">🛑</div>
+    
+    <div style="
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 80px;
+      height: 80px;
+      background: rgba(46, 204, 113, 0.6);
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      pointer-events: auto;
+      user-select: none;
+    " id="touch-gas">🚀</div>
+    
+    <div style="
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.8);
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+    ">
+      👆 Swipe to steer<br>Tap sides for gas/brake
+    </div>
+  `;
+  
+  document.body.appendChild(touchUI);
+  
+  // Button event listeners
+  const brakeBtn = document.getElementById('touch-brake');
+  const gasBtn = document.getElementById('touch-gas');
+  
+  if (brakeBtn) {
+    brakeBtn.addEventListener('touchstart', (e) => {
+      touchState.braking = 1;
+      brakeBtn.style.transform = 'scale(0.95)';
+      e.preventDefault();
+    });
+    brakeBtn.addEventListener('touchend', (e) => {
+      touchState.braking = 0;
+      brakeBtn.style.transform = 'scale(1)';
+      e.preventDefault();
+    });
+  }
+  
+  if (gasBtn) {
+    gasBtn.addEventListener('touchstart', (e) => {
+      touchState.throttle = 1;
+      gasBtn.style.transform = 'scale(0.95)';
+      e.preventDefault();
+    });
+    gasBtn.addEventListener('touchend', (e) => {
+      touchState.throttle = 0;
+      gasBtn.style.transform = 'scale(1)';
+      e.preventDefault();
+    });
+  }
 }
 
 function toggleDriveMode() {
@@ -242,6 +421,12 @@ function enterDriveMode() {
   // Show HUD
   if (driveHud) driveHud.style.display = 'block';
   if (carDashboard) carDashboard.style.display = 'block';
+  
+  // Show touch controls on mobile
+  const touchControls = document.getElementById('touch-controls');
+  if (touchControls && 'ontouchstart' in window) {
+    touchControls.style.display = 'block';
+  }
 
   // Create/show car marker
   if (!carMarker) {
@@ -308,6 +493,12 @@ function exitDriveMode() {
   if (driveHud) driveHud.style.display = 'none';
   if (carDashboard) carDashboard.style.display = 'none';
   hideDriveInstructions();
+  
+  // Hide touch controls
+  const touchControls = document.getElementById('touch-controls');
+  if (touchControls) {
+    touchControls.style.display = 'none';
+  }
 
   // Hide car marker
   if (carMarker) {
@@ -428,10 +619,15 @@ function gameLoop() {
   const MAX_SPEED = 120; // km/h
   const TURN_SPEED = 120; // degrees per second
   
-  // Handle input
-  if (keys.w) {
+  // Handle input (keyboard + touch)
+  const isAccelerating = keys.w || touchState.throttle > 0;
+  const isBraking = keys.s || touchState.braking > 0;
+  const isTurningLeft = keys.a || touchState.steering < -0.2;
+  const isTurningRight = keys.d || touchState.steering > 0.2;
+  
+  if (isAccelerating) {
     carSpeed = Math.min(carSpeed + ACCEL * dt, MAX_SPEED);
-  } else if (keys.s) {
+  } else if (isBraking) {
     carSpeed = Math.max(carSpeed - BRAKING * dt, -20);
   } else {
     // Friction
@@ -442,14 +638,17 @@ function gameLoop() {
     }
   }
   
-  // Turning (only when moving)
+  // Turning (only when moving) - combine keyboard and touch
   if (Math.abs(carSpeed) > 1) {
     const turnAmount = TURN_SPEED * dt * Math.min(Math.abs(carSpeed) / 30, 1);
-    if (keys.a) {
-      carBearing -= turnAmount;
-    }
-    if (keys.d) {
-      carBearing += turnAmount;
+    
+    // Keyboard steering
+    if (keys.a) carBearing -= turnAmount;
+    if (keys.d) carBearing += turnAmount;
+    
+    // Touch steering (smooth)
+    if (Math.abs(touchState.steering) > 0.1) {
+      carBearing += turnAmount * touchState.steering * 2;
     }
   }
   
