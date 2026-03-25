@@ -1,0 +1,965 @@
+/**
+ * Lisbon 3D — Drive Mode Design System
+ * A viral-worthy night driving aesthetic with neon accents
+ * Built in public, indie game vibes
+ */
+
+/* ========================================
+   FONTS
+   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ========================================
+   CSS VARIABLES (Design Tokens)
+   ======================================== */
+:root {
+  /* Neon Accent Colors */
+  --neon-cyan: #00f5d4;
+  --neon-cyan-glow: rgba(0, 245, 212, 0.4);
+  --neon-magenta: #ff006e;
+  --neon-magenta-glow: rgba(255, 0, 110, 0.4);
+  --neon-amber: #ffbe0b;
+  --neon-amber-glow: rgba(255, 190, 11, 0.4);
+  --neon-purple: #8338ec;
+  --neon-purple-glow: rgba(131, 56, 236, 0.4);
+  
+  /* Dark Theme */
+  --obsidian: #0a0a0f;
+  --slate-900: #12121a;
+  --slate-800: #1a1a25;
+  --slate-700: #252536;
+  --slate-600: #323245;
+  
+  /* Glass Effects */
+  --glass-dark: rgba(10, 10, 15, 0.88);
+  --glass-medium: rgba(18, 18, 26, 0.75);
+  --glass-light: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Typography */
+  --font-display: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow-cyan: 0 0 30px var(--neon-cyan-glow);
+  --shadow-glow-magenta: 0 0 30px var(--neon-magenta-glow);
+  --shadow-glow-amber: 0 0 30px var(--neon-amber-glow);
+}
+
+/* ========================================
+   DRIVE MODE HUD LAYOUT
+   ======================================== */
+.drive-mode-active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Windshield Frame Overlay */
+.windshield-frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  background: 
+    /* Top gradient for roof */
+    linear-gradient(180deg, var(--obsidian) 0%, transparent 80px),
+    /* Side pillars */
+    linear-gradient(90deg, var(--obsidian) 0%, transparent 40px, transparent calc(100% - 40px), var(--obsidian) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.drive-mode-active ~ .windshield-frame,
+body:has(.drive-mode-active) .windshield-frame {
+  opacity: 1;
+}
+
+/* Dashboard Silhouette at Bottom */
+.dashboard-silhouette {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(180deg, transparent 0%, var(--obsidian) 60%);
+  pointer-events: none;
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.drive-mode-active ~ .dashboard-silhouette,
+body:has(.drive-mode-active) .dashboard-silhouette {
+  opacity: 1;
+}
+
+/* Steering Wheel Hint */
+.steering-wheel-hint {
+  position: fixed;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 100px;
+  border: 3px solid var(--slate-700);
+  border-bottom: none;
+  border-radius: 100px 100px 0 0;
+  pointer-events: none;
+  z-index: 997;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.drive-mode-active ~ .steering-wheel-hint,
+body:has(.drive-mode-active) .steering-wheel-hint {
+  opacity: 0.3;
+}
+
+/* ========================================
+   SPEEDOMETER
+   ======================================== */
+.speedometer-container {
+  position: fixed;
+  bottom: 140px;
+  left: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.speedometer-gauge {
+  width: 160px;
+  height: 160px;
+  position: relative;
+  background: var(--glass-dark);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--glass-border);
+  box-shadow: var(--shadow-lg), inset 0 0 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+}
+
+.speedometer-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-120deg);
+}
+
+.speedometer-track {
+  fill: none;
+  stroke: var(--slate-700);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.speedometer-fill {
+  fill: none;
+  stroke: url(#speed-gradient);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 0.15s ease-out;
+  filter: drop-shadow(0 0 8px var(--neon-cyan-glow));
+}
+
+.speedometer-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.speedometer-value {
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 20px var(--neon-cyan-glow);
+  line-height: 1;
+}
+
+.speedometer-unit {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.speedometer-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 12px;
+}
+
+/* Speed indicator marks */
+.speedometer-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.speed-mark {
+  position: absolute;
+  width: 2px;
+  height: 8px;
+  background: var(--slate-700);
+  left: 50%;
+  transform-origin: center 80px;
+}
+
+/* High speed effects */
+.speedometer-gauge.high-speed {
+  animation: speedPulse 0.5s ease-in-out infinite;
+}
+
+.speedometer-gauge.high-speed .speedometer-fill {
+  stroke: url(#speed-gradient-fast);
+  filter: drop-shadow(0 0 12px var(--neon-magenta-glow));
+}
+
+.speedometer-gauge.high-speed .speedometer-value {
+  color: var(--neon-magenta);
+  text-shadow: 0 0 20px var(--neon-magenta-glow);
+  animation: speedFlicker 0.1s ease-in-out infinite;
+}
+
+/* ========================================
+   SCORE DISPLAY
+   ======================================== */
+.score-container {
+  position: fixed;
+  top: 40px;
+  right: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.score-panel {
+  background: var(--glass-dark);
+  border: 2px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.score-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--neon-amber), var(--neon-purple));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px var(--neon-amber-glow);
+}
+
+.score-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.score-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.score-value {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--neon-amber);
+  text-shadow: 0 0 10px var(--neon-amber-glow);
+}
+
+/* Distance sub-display */
+.distance-badge {
+  background: var(--glass-medium);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--slate-600);
+}
+
+.distance-badge span {
+  color: var(--neon-cyan);
+  font-weight: 600;
+}
+
+/* Score pop animation */
+.score-pop {
+  animation: scorePop 0.3s ease-out;
+}
+
+/* Floating score (for point gains) */
+.floating-score {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--neon-magenta);
+  text-shadow: 0 0 20px var(--neon-magenta-glow);
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+}
+
+/* ========================================
+   MINI MAP
+   ======================================== */
+.minimap-container {
+  position: fixed;
+  bottom: 140px;
+  right: 40px;
+  width: 140px;
+  height: 140px;
+  background: var(--glass-dark);
+  border: 2px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.minimap-frame {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid var(--slate-700);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.minimap-car {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--neon-cyan);
+  border-radius: var(--radius-full);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 15px var(--neon-cyan);
+  z-index: 10;
+}
+
+.minimap-car::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid var(--neon-cyan);
+}
+
+.minimap-landmark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.minimap-landmark.visited {
+  opacity: 0.3;
+}
+
+.minimap-label {
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* ========================================
+   CHECKPOINT POPUP
+   ======================================== */
+.checkpoint-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+.checkpoint-card {
+  background: linear-gradient(135deg, var(--slate-800) 0%, var(--slate-900) 100%);
+  border: 2px solid var(--neon-magenta);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  text-align: center;
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 60px var(--neon-magenta-glow),
+    inset 0 0 60px rgba(255, 0, 110, 0.1);
+  transform: scale(0.8);
+  opacity: 0;
+  animation: checkpointIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.checkpoint-card.fade-out {
+  animation: checkpointOut 0.4s ease-in forwards;
+}
+
+.checkpoint-icon {
+  font-size: 56px;
+  margin-bottom: var(--space-md);
+  animation: iconBounce 0.6s ease-out;
+}
+
+.checkpoint-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: var(--space-sm);
+  text-shadow: 0 0 30px var(--neon-magenta-glow);
+}
+
+.checkpoint-name {
+  color: var(--neon-magenta);
+}
+
+.checkpoint-points {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--neon-amber);
+  text-shadow: 0 0 20px var(--neon-amber-glow);
+}
+
+.checkpoint-points-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--slate-600);
+  margin-top: var(--space-xs);
+}
+
+/* Particle burst effect */
+.checkpoint-card::before,
+.checkpoint-card::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--neon-magenta);
+  transform: translate(-50%, -50%) scale(0.5);
+  opacity: 0;
+  animation: particleBurst 1s ease-out forwards;
+  pointer-events: none;
+}
+
+.checkpoint-card::after {
+  animation-delay: 0.1s;
+  width: 400px;
+  height: 400px;
+}
+
+/* ========================================
+   SPEED LINES EFFECT
+   ======================================== */
+.speed-lines {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 100vmax;
+  height: 100vmax;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.speed-lines.active {
+  opacity: 1;
+}
+
+.speed-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 100px;
+  background: linear-gradient(180deg, transparent, var(--neon-cyan), transparent);
+  transform-origin: center bottom;
+  opacity: 0;
+}
+
+.speed-lines.active .speed-line {
+  animation: speedLine 0.8s linear infinite;
+}
+
+/* ========================================
+   VIRAL MOMENT OVERLAY
+   ======================================== */
+.viral-moment {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.viral-badge {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-magenta));
+  padding: var(--space-lg) var(--space-2xl);
+  border-radius: var(--radius-xl);
+  box-shadow: 
+    0 0 60px var(--neon-magenta-glow),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: viralPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.viral-emoji {
+  font-size: 64px;
+  margin-bottom: var(--space-sm);
+  display: block;
+  animation: emojiWiggle 0.5s ease-in-out infinite;
+}
+
+.viral-title {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+.viral-subtitle {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: var(--space-sm);
+}
+
+.viral-hint {
+  margin-top: var(--space-xl);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--slate-600);
+  background: var(--glass-dark);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+/* ========================================
+   CONTROLS OVERLAY
+   ======================================== */
+.drive-controls {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-md);
+  pointer-events: auto;
+  z-index: 1001;
+}
+
+.control-pill {
+  background: var(--glass-dark);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--slate-600);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  backdrop-filter: blur(10px);
+}
+
+.control-key {
+  background: var(--slate-800);
+  border: 1px solid var(--slate-700);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  box-shadow: 0 2px 0 var(--slate-700);
+}
+
+/* ========================================
+   ANIMATION KEYFRAMES
+   ======================================== */
+
+/* Speedometer animations */
+@keyframes speedPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes speedFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
+}
+
+/* Score animations */
+@keyframes scorePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.8);
+  }
+}
+
+/* Checkpoint animations */
+@keyframes checkpointIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  60% {
+    transform: scale(1.05) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes checkpointOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+@keyframes particleBurst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Speed lines */
+@keyframes speedLine {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--rotation)) translateY(0);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--rotation)) translateY(-200px);
+  }
+}
+
+/* Viral moment */
+@keyframes viralPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes emojiWiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+/* Car marker glow */
+@keyframes carGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px var(--neon-cyan-glow),
+      0 0 40px var(--neon-cyan-glow);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px var(--neon-cyan-glow),
+      0 0 60px var(--neon-cyan-glow);
+  }
+}
+
+/* HUD entrance */
+@keyframes hudEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .speedometer-container {
+    bottom: 120px;
+    left: 24px;
+  }
+  
+  .speedometer-gauge {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .speedometer-value {
+    font-size: 34px;
+  }
+  
+  .score-container {
+    top: 24px;
+    right: 24px;
+  }
+  
+  .score-panel {
+    padding: var(--space-sm) var(--space-md);
+  }
+  
+  .score-value {
+    font-size: 22px;
+  }
+  
+  .minimap-container {
+    bottom: 120px;
+    right: 24px;
+    width: 110px;
+    height: 110px;
+  }
+  
+  .checkpoint-card {
+    padding: var(--space-lg);
+    margin: var(--space-md);
+  }
+  
+  .checkpoint-title {
+    font-size: 24px;
+  }
+  
+  .checkpoint-points {
+    font-size: 36px;
+  }
+  
+  .viral-title {
+    font-size: 36px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .speedometer-container {
+    bottom: 100px;
+    left: 16px;
+  }
+  
+  .speedometer-gauge {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .speedometer-value {
+    font-size: 28px;
+  }
+  
+  .speedometer-label {
+    font-size: 12px;
+  }
+  
+  .score-container {
+    top: 16px;
+    right: 16px;
+  }
+  
+  .score-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  .score-value {
+    font-size: 18px;
+  }
+  
+  .minimap-container {
+    display: none; /* Hide minimap on small mobile */
+  }
+  
+  .drive-controls {
+    bottom: 20px;
+    gap: var(--space-sm);
+  }
+  
+  .control-pill {
+    font-size: 11px;
+    padding: var(--space-xs) var(--space-sm);
+  }
+  
+  .checkpoint-card {
+    padding: var(--space-md);
+  }
+  
+  .checkpoint-icon {
+    font-size: 40px;
+  }
+  
+  .checkpoint-title {
+    font-size: 20px;
+  }
+  
+  .checkpoint-points {
+    font-size: 28px;
+  }
+  
+  .viral-badge {
+    padding: var(--space-md) var(--space-lg);
+  }
+  
+  .viral-emoji {
+    font-size: 48px;
+  }
+  
+  .viral-title {
+    font-size: 28px;
+  }
+  
+  .viral-subtitle {
+    font-size: 14px;
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.hidden {
+  display: none !important;
+}
+
+.fade-in {
+  animation: hudEntrance 0.4s ease-out forwards;
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px var(--neon-cyan-glow);
+}
+
+.glow-magenta {
+  box-shadow: 0 0 20px var(--neon-magenta-glow);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px var(--neon-amber-glow);
+}
+
+.text-cyan { color: var(--neon-cyan); }
+.text-magenta { color: var(--neon-magenta); }
+.text-amber { color: var(--neon-amber); }
+.text-purple { color: var(--neon-purple); }
