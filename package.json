@@ -1,7 +1,7 @@
 {
   "name": "lisbon-3d-web",
-  "version": "0.1.0",
-  "description": "3D map of Lisbon using MapLibre GL JS",
+  "version": "0.2.0",
+  "description": "3D map of Lisbon with Hello Terrain drive mode",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "maplibre-gl": "^5.0.0"
+    "maplibre-gl": "^5.0.0",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "vite": "^6.0.0"
