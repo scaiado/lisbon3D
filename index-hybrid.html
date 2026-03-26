@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lisbon 3D — Hybrid Terrain</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; overflow: hidden; background: #000; }
+    
+    /* Mode containers */
+    #aerial-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    #drive-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: none; }
+    
+    /* Controls */
+    .mode-controls {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .mode-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .mode-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    }
+    
+    /* HUD for drive mode */
+    #drive-hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+    }
+    
+    .speedometer {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #00ff88;
+      padding: 15px 25px;
+      border-radius: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 28px;
+      font-weight: bold;
+      border: 2px solid #00ff88;
+    }
+    
+    .instructions {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-size: 14px;
+    }
+    
+    /* Loading overlay */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Aerial Mode (MapLibre) -->
+  <div id="aerial-container"></div>
+  
+  <!-- Drive Mode (Three.js) -->
+  <canvas id="drive-container"></canvas>
+  
+  <!-- HUD -->
+  <div id="drive-hud">
+    <div class="speedometer" id="speed-display">0 km/h</div>
+    <div class="instructions">
+      <b>W/S</b> = gas/brake | <b>A/D</b> = steer | <b>P</b> = exit
+    </div>
+  </div>
+  
+  <!-- Mode Controls -->
+  <div class="mode-controls">
+    <button class="mode-btn" id="mode-toggle">🚗 Enter Drive Mode</button>
+  </div>
+  
+  <!-- Loading -->
+  <div id="loading">Loading Lisbon 3D...</div>
+  
+  <script src="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.js"></script>
+  <script type="module" src="./src/hybrid-app.js"></script>
+</body>
+</html>

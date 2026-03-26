@@ -1,0 +1,164 @@
+<!-- Lisbon 3D — SVG Icon Assets -->
+<!-- Copy these into your HTML or save as separate .svg files -->
+
+<!-- ========================================
+     SPEED / GAUGE ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="13" r="9" stroke="currentColor" stroke-width="2"/>
+  <path d="M12 13L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M5 4L3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M19 4L21 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     TROPHY / ACHIEVEMENT ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M8 21H16M12 17V21M7 4H17V7C17 10.3137 14.7614 13 12 13C9.23858 13 7 10.3137 7 7V4Z" 
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5 4H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M5 4C5 6.5 6 8 7 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M19 4C19 6.5 18 8 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     LOCATION PIN ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" 
+        fill="currentColor"/>
+  <circle cx="12" cy="9" r="2.5" fill="var(--obsidian)"/>
+</svg>
+
+<!-- ========================================
+     FLAG / CHECKPOINT ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M4 15C4 15 5 14 8 14C11 14 13 16 16 16C19 16 20 15 20 15V4C20 4 19 5 16 5C13 5 11 3 8 3C5 3 4 4 4 4V15Z" 
+        fill="currentColor"/>
+  <path d="M4 22V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     STEERING WHEEL ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+  <path d="M12 3V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M4.5 12H19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+</svg>
+
+<!-- ========================================
+     SHARE ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="18" cy="5" r="3" fill="currentColor"/>
+  <circle cx="6" cy="12" r="3" fill="currentColor"/>
+  <circle cx="18" cy="19" r="3" fill="currentColor"/>
+  <path d="M15 7L9 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M15 17L9 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     CAR / VEHICLE ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M5 16H19L20 11L17 8H7L4 11L5 16Z" fill="currentColor"/>
+  <rect x="6" y="17" width="4" height="3" rx="1" fill="currentColor"/>
+  <rect x="14" y="17" width="4" height="3" rx="1" fill="currentColor"/>
+  <path d="M7 8L8 5H16L17 8" stroke="currentColor" stroke-width="1.5"/>
+</svg>
+
+<!-- ========================================
+     LIGHTNING / BOOST ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M13 2L4 14H12L11 22L20 10H12L13 2Z" fill="currentColor" stroke="currentColor" 
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+
+<!-- ========================================
+     RADAR / SCAN ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+  <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+  <path d="M12 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12 18V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M3 12H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M18 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+</svg>
+
+<!-- ========================================
+     STAR / RATING ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" 
+        fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>
+
+<!-- ========================================
+     CAMERA / SCREENSHOT ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+  <circle cx="17" cy="9" r="1" fill="currentColor"/>
+  <path d="M8 6L9 4H15L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     EXPLORE / COMPASS ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+  <path d="M16.24 7.76L14 14L7.76 16.24L10 10L16.24 7.76Z" fill="currentColor"/>
+  <circle cx="12" cy="12" r="1" fill="var(--obsidian)"/>
+</svg>
+
+<!-- ========================================
+     PAUSE ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/>
+  <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>
+</svg>
+
+<!-- ========================================
+     PLAY ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M5 4L19 12L5 20V4Z" fill="currentColor"/>
+</svg>
+
+<!-- ========================================
+     GAS PEDAL ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M8 20L6 10L12 4L18 10L16 20H8Z" fill="currentColor"/>
+  <path d="M12 8V16" stroke="var(--obsidian)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M9 12H15" stroke="var(--obsidian)" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     BRAKE PEDAL ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="4" width="12" height="16" rx="2" fill="currentColor"/>
+  <path d="M9 8H15" stroke="var(--obsidian)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M9 12H15" stroke="var(--obsidian)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M9 16H15" stroke="var(--obsidian)" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+<!-- ========================================
+     WHEEL / TURN ICON
+     ======================================== -->
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+  <path d="M4 12C4 12 6 8 12 8C18 8 20 12 20 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M4 12C4 12 6 16 12 16C18 16 20 12 20 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+</svg>
