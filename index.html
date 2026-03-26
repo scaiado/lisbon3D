@@ -3,318 +3,918 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lisbon 3D Explorer</title>
+  <title>Lisbon3D GTA Mode - Prototype</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.css">
-  <!-- Drive Mode Design System -->
-  <link rel="stylesheet" href="./css/drive-mode.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-      overflow: hidden;
-      background: var(--obsidian, #0a0a0f);
-    }
-    
-    #map {
-      width: 100vw;
-      height: 100vh;
-    }
-    
-    .map-overlay {
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; overflow: hidden; background: #000; }
+
+    /* Mode Containers */
+    #aerial-container, #drive-container {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.8);
+      top: 0; left: 0; width: 100%; height: 100%;
+    }
+    #drive-container { display: none; }
+
+    /* MapLibre */
+    #map { width: 100%; height: 100%; }
+
+    /* Three.js Canvas */
+    #game-canvas { width: 100%; height: 100%; display: block; }
+
+    /* UI Overlay */
+    .ui-overlay {
+      position: absolute;
+      top: 20px; left: 20px;
+      background: rgba(0,0,0,0.8);
       color: white;
-      padding: 15px 20px;
-      border-radius: 8px;
+      padding: 20px;
+      border-radius: 12px;
       backdrop-filter: blur(10px);
       z-index: 1000;
-      transition: opacity 0.3s ease;
+      max-width: 300px;
     }
-    
-    body.drive-mode-active .map-overlay {
-      opacity: 0;
-      pointer-events: none;
-    }
-    
-    .map-overlay h1 {
-      font-size: 1.2rem;
-      margin-bottom: 5px;
-    }
-    
-    .map-overlay p {
-      font-size: 0.85rem;
-      opacity: 0.8;
-    }
-    
-    .controls {
-      position: absolute;
-      bottom: 30px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 15px;
-      border-radius: 8px;
-      color: white;
-      z-index: 1000;
-      transition: opacity 0.3s ease;
-    }
-    
-    body.drive-mode-active .controls {
-      opacity: 0;
-      pointer-events: none;
-    }
-    
-    .controls label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-    }
-    
-    .controls input[type="range"] {
-      width: 150px;
-    }
-    
-    #pov-toggle {
-      margin-top: 10px;
-      padding: 10px 16px;
+
+    .mode-btn {
       background: linear-gradient(135deg, #e74c3c, #c0392b);
       color: white;
       border: none;
-      border-radius: 6px;
+      padding: 12px 24px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 0.9rem;
-      width: 100%;
+      font-size: 16px;
       font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+      width: 100%;
+      transition: transform 0.2s;
     }
-    
-    #pov-toggle:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    .mode-btn:hover { transform: scale(1.05); }
+
+    /* Drive HUD */
+    #drive-hud {
+      position: absolute;
+      bottom: 40px; left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      z-index: 1000;
     }
-    
-    #pov-toggle:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
+
+    .speedometer {
+      background: rgba(0,0,0,0.9);
+      border: 2px solid #333;
+      border-radius: 50%;
+      width: 140px; height: 140px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: white;
+      position: relative;
     }
-    
-    /* Mobile optimizations */
-    @media (max-width: 768px) {
-      .controls {
-        bottom: 20px;
-        right: 10px;
-        left: 10px;
-        padding: 12px;
-        max-width: none;
-      }
-      
-      .controls input[type="range"] {
-        width: 100%;
-      }
-      
-      #pov-toggle {
-        padding: 14px 20px;
-        font-size: 1rem;
-        min-height: 48px; /* Touch-friendly */
-      }
-      
-      .map-overlay {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        padding: 12px 15px;
-      }
-      
-      .map-overlay h1 {
-        font-size: 1rem;
-      }
+
+    .speed-value {
+      font-size: 42px;
+      font-weight: bold;
+      font-family: 'SF Mono', monospace;
     }
+
+    .speed-unit { font-size: 12px; opacity: 0.7; }
+
+    .controls-hint {
+      position: absolute;
+      bottom: 200px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 30px;
+      display: none;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .key {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    /* Debug Info */
+    #debug-info {
+      position: absolute;
+      top: 20px; right: 20px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      display: none;
+      z-index: 1000;
+    }
+
+    /* Loading */
+    #loading {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      z-index: 9999;
+    }
+
+    .loader {
+      width: 50px; height: 50px;
+      border: 3px solid #333;
+      border-top-color: #e74c3c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div id="map"></div>
-  
-  <div class="map-overlay">
-    <h1>🇵🇹 Lisbon 3D Explorer</h1>
-    <p>Open data • Open source • MapLibre GL</p>
-  </div>
-  
-  <div class="controls">
-    <label>
-      Pitch: <span id="pitch-value">60</span>°
-      <input type="range" id="pitch" min="0" max="85" value="60">
-    </label>
-    <label>
-      Zoom: <span id="zoom-value">15</span>
-      <input type="range" id="zoom" min="10" max="18" value="15" step="0.1">
-    </label>
-    <button id="pov-toggle">
-      🚗 Enter Drive Mode
-    </button>
-    <p style="margin-top: 10px; font-size: 0.75rem; opacity: 0.8; line-height: 1.4;">
-      <b>Drive Mode:</b><br>
-      🚗 W/S = gas/brake<br>
-      🔄 A/D = steer<br>
-      P = Exit drive mode
-    </p>
+  <!-- Loading Screen -->
+  <div id="loading">
+    <div class="loader"></div>
+    <p>Loading GTA Mode...</p>
   </div>
 
-  <!-- ========================================
-       DRIVE MODE HUD
-       ======================================== -->
-  <div id="drive-hud" style="display: none;">
-    
-    <!-- Speedometer -->
-    <div class="speedometer-container">
-      <div class="speedometer-gauge" id="speedometer-gauge">
-        <svg class="speedometer-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" class="speedometer-track" stroke-dasharray="212 283" />
-          <circle cx="50" cy="50" r="45" class="speedometer-fill" id="speed-fill" stroke-dasharray="283" stroke-dashoffset="283" />
-        </svg>
-        <div class="speedometer-center">
-          <div class="speedometer-value" id="speed-value">0</div>
-          <div class="speedometer-unit">km/h</div>
-        </div>
-      </div>
-      <div class="speedometer-label">Speed</div>
-    </div>
-    
-    <!-- Score Display -->
-    <div class="score-container">
-      <div class="score-panel" id="score-panel">
-        <div class="score-icon">🏆</div>
-        <div class="score-content">
-          <div class="score-label">Score</div>
-          <div class="score-value" id="score-value">0</div>
-        </div>
-      </div>
-      <div class="distance-badge">
-        <span id="distance-value">0.0</span> km traveled
-      </div>
-    </div>
-    
-    <!-- Mini Map -->
-    <div class="minimap-container">
-      <div class="minimap-frame">
-        <div class="minimap-car"></div>
-        <div class="minimap-landmark" id="landmark-1" style="top: 20%; left: 30%; background: #9b59b6;"></div>
-        <div class="minimap-landmark" id="landmark-2" style="top: 60%; left: 70%; background: #3498db;"></div>
-        <div class="minimap-landmark" id="landmark-3" style="top: 40%; left: 80%; background: #f39c12;"></div>
-      </div>
-      <div class="minimap-label">Radar</div>
-    </div>
-    
-    <!-- Drive Controls Hint -->
-    <div class="drive-controls">
-      <div class="control-pill">
-        <span class="control-key">W</span>
-        <span>Gas</span>
-      </div>
-      <div class="control-pill">
-        <span class="control-key">S</span>
-        <span>Brake</span>
-      </div>
-      <div class="control-pill">
-        <span class="control-key">A</span>
-        <span class="control-key">D</span>
-        <span>Steer</span>
-      </div>
-      <div class="control-pill">
-        <span class="control-key">P</span>
-        <span>Exit</span>
-      </div>
+  <!-- Aerial Mode (MapLibre) -->
+  <div id="aerial-container">
+    <div id="map"></div>
+    <div class="ui-overlay">
+      <h2>🇵🇹 Lisbon 3D Explorer</h2>
+      <p style="opacity:0.7; margin:8px 0;">Explore Lisbon from above</p>
+      <button class="mode-btn" id="enter-gta">🚗 Enter GTA Mode</button>
+      <p style="font-size:12px; opacity:0.5; margin-top:10px;">
+        Experimental driving simulation
+      </p>
     </div>
   </div>
 
-  <!-- Car Interior Frame Overlays -->
-  <div class="windshield-frame" id="windshield-frame"></div>
-  <div class="dashboard-silhouette" id="dashboard-silhouette"></div>
-  <div class="steering-wheel-hint" id="steering-wheel-hint"></div>
+  <!-- Drive Mode (Three.js) -->
+  <div id="drive-container">
+    <canvas id="game-canvas"></canvas>
 
-  <!-- Speed Lines Effect -->
-  <div class="speed-lines" id="speed-lines"></div>
+    <div class="ui-overlay">
+      <h2>🎮 GTA Lisbon Mode</h2>
+      <p style="opacity:0.7; margin:8px 0;">Physics-based driving</p>
+      <button class="mode-btn" id="exit-gta">🚁 Exit to Aerial</button>
+    </div>
 
-  <!-- Checkpoint Popup -->
-  <div class="checkpoint-overlay" id="checkpoint-overlay" style="display: none;">
-    <div class="checkpoint-card" id="checkpoint-card">
-      <div class="checkpoint-icon">🏁</div>
-      <div class="checkpoint-title">
-        Checkpoint: <span class="checkpoint-name" id="checkpoint-name">Landmark</span>!
+    <div class="controls-hint" id="controls-hint">
+      <span><span class="key">W</span> Gas</span>
+      <span><span class="key">S</span> Brake</span>
+      <span><span class="key">A</span><span class="key">D</span> Steer</span>
+    </div>
+
+    <div id="drive-hud">
+      <div class="speedometer">
+        <div class="speed-value" id="speed-display">0</div>
+        <div class="speed-unit">km/h</div>
       </div>
-      <div class="checkpoint-points" id="checkpoint-points">+500</div>
-      <div class="checkpoint-points-label">points</div>
-    </div>
-  </div>
-
-  <!-- Viral Moment Overlay -->
-  <div class="viral-moment" id="viral-moment" style="display: none;">
-    <div class="viral-badge">
-      <span class="viral-emoji" id="viral-emoji">💨</span>
-      <div class="viral-title" id="viral-title">Speed Demon!</div>
-      <div class="viral-subtitle" id="viral-subtitle">You hit 80 km/h</div>
-    </div>
-    <div class="viral-hint">
-      📸 Screenshot this moment!
-    </div>
-  </div>
-
-  <!-- Distance Milestone Toast -->
-  <div class="milestone-toast" id="milestone-toast" style="display: none; position: fixed; top: 120px; right: 40px;">
-    <div style="background: var(--glass-dark); border: 1px solid var(--neon-purple); 
-                border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg);
-                box-shadow: var(--shadow-glow-purple); animation: hudEntrance 0.4s ease-out;
-                display: flex; align-items: center; gap: var(--space-md);">
-      <span style="font-size: 28px;">🎯</span>
-      <div>
-        <div style="font-family: var(--font-display); font-size: 14px; color: var(--neon-purple); 
-                    font-weight: 600;">MILESTONE</div>
-        <div style="font-family: var(--font-mono); font-size: 20px; color: white; font-weight: 700;">
-          <span id="milestone-distance">1.0</span> km
-        </div>
+      <div id="street-name" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; white-space: nowrap; border: 2px solid #e74c3c;">
+        Unknown Street
       </div>
     </div>
+
+    <div id="debug-info">
+      <div>Speed: <span id="debug-speed">0</span> km/h</div>
+      <div>Pos: <span id="debug-pos">0, 0</span></div>
+      <div>Buildings: <span id="debug-buildings">0</span></div>
+      <div>FPS: <span id="debug-fps">0</span></div>
+    </div>
   </div>
 
-  <!-- Car Dashboard Frame -->
-  <div id="car-dashboard" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 120px; 
-       background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
-       z-index: 900; pointer-events: none;">
-    <!-- Dashboard silhouette -->
-    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
-                background: linear-gradient(to top, #0a0a0f 0%, #1a1a25 100%);
-                border-top: 2px solid #333;
-                box-shadow: 0 -10px 40px rgba(0,0,0,0.8);">
-      <!-- Steering wheel hint -->
-      <div style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
-                  width: 200px; height: 200px; border-radius: 50%;
-                  border: 8px solid #222;
-                  background: radial-gradient(circle, #1a1a25 30%, #0a0a0f 70%);
-                  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);"></div>
-      <!-- Dashboard lights -->
-      <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-                  display: flex; gap: 20px;">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 10px #00ff88;"></div>
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffaa00; box-shadow: 0 0 10px #ffaa00;"></div>
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ff4444; box-shadow: 0 0 10px #ff4444;"></div>
-      </div>
-    </div>
-    <!-- Windshield frame -->
-    <div style="position: absolute; top: -20px; left: 20px; right: 20px; height: 40px;
-                border-left: 3px solid rgba(255,255,255,0.1);
-                border-right: 3px solid rgba(255,255,255,0.1);
-                border-top: 3px solid rgba(255,255,255,0.1);
-                border-radius: 20px 20px 0 0;
-                pointer-events: none;"></div>
-  </div>
-  
+  <!-- Scripts -->
   <script src="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.js"></script>
-  <script src="./main-simple.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import * as CANNON from 'cannon-es';
+
+    // ============================================
+    // CONFIG
+    // ============================================
+    const LISBON_CENTER = [-9.1393, 38.7223];
+    const MAPTILER_KEY = 'TPftMzBdOfDE265XubQA';
+
+    // ============================================
+    // STATE
+    // ============================================
+    let currentMode = 'aerial';
+    let map = null;
+    let driveScene = null;
+    let keys = { w: false, a: false, s: false, d: false };
+    let spawnPin = null; // Map marker for spawn location
+    let spawnPosition = null; // {lng, lat} where car will spawn
+
+    // ============================================
+    // AERIAL MODE (MapLibre)
+    // ============================================
+    function initAerialMode() {
+      map = new maplibregl.Map({
+        container: 'map',
+        style: {
+          version: 8,
+          sources: {
+            osm: {
+              type: 'raster',
+              tiles: [
+                'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+              ],
+              tileSize: 256
+            }
+          },
+          layers: [{
+            id: 'osm',
+            type: 'raster',
+            source: 'osm'
+          }]
+        },
+        center: LISBON_CENTER,
+        zoom: 15,
+        pitch: 60,
+        bearing: -20
+      });
+
+      map.addControl(new maplibregl.NavigationControl());
+
+      // PIN-TO-SPAWN: Click to place car spawn location
+      map.on('click', (e) => {
+        const coords = e.lngLat;
+        
+        // Remove existing pin
+        if (spawnPin) {
+          spawnPin.remove();
+        }
+        
+        // Place new pin
+        spawnPin = new maplibregl.Marker({
+          color: '#e74c3c',
+          draggable: true
+        })
+          .setLngLat(coords)
+          .addTo(map);
+        
+        spawnPosition = { lng: coords.lng, lat: coords.lat };
+        
+        // Show confirmation
+        const btn = document.getElementById('enter-gta');
+        btn.textContent = `🚗 Drive from here`;
+        btn.style.background = '#27ae60';
+        
+        console.log('📍 Spawn pin placed at:', coords.lng.toFixed(4), coords.lat.toFixed(4));
+      });
+
+      // Add 3D buildings
+      map.on('load', () => {
+        if (MAPTILER_KEY) {
+          map.addSource('buildings', {
+            type: 'vector',
+            url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${MAPTILER_KEY}`
+          });
+
+          map.addLayer({
+            id: '3d-buildings',
+            type: 'fill-extrusion',
+            source: 'buildings',
+            'source-layer': 'building',
+            paint: {
+              'fill-extrusion-color': '#e0e0e0',
+              'fill-extrusion-height': ['get', 'height'],
+              'fill-extrusion-opacity': 0.6
+            }
+          });
+        }
+      });
+    }
+
+    // ============================================
+    // GTA DRIVE MODE (Three.js + Cannon-es)
+    // ============================================
+    class GTADriveMode {
+      constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.world = null;
+        this.vehicle = null;
+        this.buildings = [];
+        this.lastTime = 0;
+        this.frameCount = 0;
+        this.lastFpsTime = 0;
+
+        this.init();
+      }
+
+      init() {
+        // Three.js Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87CEEB);
+        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 500);
+
+        // Camera (first-person driver view)
+        this.camera = new THREE.PerspectiveCamera(
+          75, window.innerWidth / window.innerHeight, 0.1, 1000
+        );
+
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+
+        // Lighting
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambient);
+
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(100, 200, 100);
+        sun.castShadow = true;
+        sun.shadow.camera.left = -100;
+        sun.shadow.camera.right = 100;
+        sun.shadow.camera.top = 100;
+        sun.shadow.camera.bottom = -100;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        this.scene.add(sun);
+
+        // Physics World
+        this.world = new CANNON.World();
+        this.world.gravity.set(0, -9.82, 0);
+
+        // Physics materials
+        this.groundMaterial = new CANNON.Material('ground');
+        this.wheelMaterial = new CANNON.Material('wheel');
+
+        const wheelGroundContact = new CANNON.ContactMaterial(
+          this.wheelMaterial, this.groundMaterial, {
+            friction: 0.8,
+            restitution: 0.1
+          }
+        );
+        this.world.addContactMaterial(wheelGroundContact);
+
+        // Create environment
+        this.createGround();
+        this.createBuildings();
+        this.loadRealRoads(); // Load actual Lisbon roads
+        this.createTrees(); // Add vegetation
+        this.createVehicle();
+
+        // Resize handler
+        window.addEventListener('resize', () => this.onResize());
+      }
+
+      createGround() {
+        // Visual ground - FLAT (matches physics plane)
+        const geometry = new THREE.PlaneGeometry(1000, 1000);
+        geometry.rotateX(-Math.PI / 2);
+
+        // FLAT TERRAIN - no hills for physics consistency
+        // Car drives on flat asphalt
+
+        // Asphalt-like material
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x333333,
+          roughness: 0.9,
+          metalness: 0.1
+        });
+
+        const ground = new THREE.Mesh(geometry, material);
+        ground.receiveShadow = true;
+        this.scene.add(ground);
+
+        // Physics ground - use flat plane for reliability
+        const groundShape = new CANNON.Plane();
+        const groundBody = new CANNON.Body({
+          mass: 0,
+          material: this.groundMaterial
+        });
+        groundBody.addShape(groundShape);
+        groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+        groundBody.position.set(0, 0, 0);
+        this.world.addBody(groundBody);
+
+        // Grid helper (visual roads)
+        const grid = new THREE.GridHelper(1000, 50, 0xffffff, 0x555555);
+        grid.position.y = 0.1;
+        grid.material.opacity = 0.3;
+        grid.material.transparent = true;
+        this.scene.add(grid);
+      }
+
+      getHeightAt(x, z) {
+        return 0; // FLAT TERRAIN - no height variation
+      }
+
+      getHeightfieldData(rows, size) {
+        const data = [];
+        for (let i = 0; i < rows; i++) {
+          const row = [];
+          for (let j = 0; j < rows; j++) {
+            const x = (j / rows) * size - size / 2;
+            const z = (i / rows) * size - size / 2;
+            row.push(Math.sin(x * 0.01) * 5 + Math.cos(z * 0.01) * 5);
+          }
+          data.push(row);
+        }
+        return data;
+      }
+
+      createBuildings() {
+        // Create city blocks (Lisbon-inspired grid)
+        const blockSize = 40;
+        const streetWidth = 20;
+        const citySize = 400;
+
+        const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+        boxGeo.translate(0, 0.5, 0);
+
+        const buildingMat = new THREE.MeshStandardMaterial({
+          color: 0xd4c5b5,
+          roughness: 0.8
+        });
+
+        // Create instanced buildings
+        const maxBuildings = 200;
+        this.buildingMesh = new THREE.InstancedMesh(boxGeo, buildingMat, maxBuildings);
+        this.buildingMesh.castShadow = true;
+        this.buildingMesh.receiveShadow = true;
+
+        const dummy = new THREE.Object3D();
+        let buildingCount = 0;
+
+        for (let x = -citySize; x < citySize; x += blockSize + streetWidth) {
+          for (let z = -citySize; z < citySize; z += blockSize + streetWidth) {
+            if (buildingCount >= maxBuildings) break;
+
+            // Random building dimensions
+            const width = 10 + Math.random() * 20;
+            const depth = 10 + Math.random() * 20;
+            const height = 10 + Math.random() * 40;
+
+            dummy.position.set(x + blockSize/2, 0, z + blockSize/2);
+            dummy.scale.set(width, height, depth);
+            dummy.updateMatrix();
+
+            this.buildingMesh.setMatrixAt(buildingCount, dummy.matrix);
+
+            // Add physics body
+            const shape = new CANNON.Box(new CANNON.Vec3(width/2, height/2, depth/2));
+            const body = new CANNON.Body({ mass: 0 });
+            body.addShape(shape);
+            body.position.set(x + blockSize/2, height/2, z + blockSize/2);
+            this.world.addBody(body);
+            this.buildings.push(body);
+
+            buildingCount++;
+          }
+        }
+
+        this.buildingMesh.count = buildingCount;
+        this.scene.add(this.buildingMesh);
+
+        // Update debug
+        document.getElementById('debug-buildings').textContent = buildingCount;
+      }
+
+      loadRealRoads() {
+        // Load real Lisbon roads from OpenStreetMap
+        const centerLat = LISBON_CENTER[1];
+        const centerLng = LISBON_CENTER[0];
+        const radius = 1000; // meters
+
+        // Overpass API query for roads
+        const query = `[out:json];way[highway~"^(primary|secondary|tertiary|residential|unclassified)$"](around:${radius},${centerLat},${centerLng});out geom;`;
+
+        fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: query
+        })
+        .then(r => r.json())
+        .then(data => {
+          console.log(`🛣️ Loaded ${data.elements.length} road segments`);
+          
+          const roadMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2a2a2a,
+            roughness: 0.9 
+          });
+
+          data.elements.forEach(way => {
+            if (!way.geometry || way.geometry.length < 2) return;
+
+            // Convert lat/lng to local meters
+            const points = way.geometry.map(node => {
+              const x = (node.lon - centerLng) * 111000 * Math.cos(centerLat * Math.PI / 180);
+              const z = -(node.lat - centerLat) * 111000; // Negate for Three.js
+              return new THREE.Vector3(x, 0.05, z);
+            });
+
+            // Create road line
+            const curve = new THREE.CatmullRomCurve3(points);
+            const roadGeo = new THREE.TubeGeometry(curve, points.length * 2, 4, 3, false);
+            const roadMesh = new THREE.Mesh(roadGeo, roadMaterial);
+            roadMesh.receiveShadow = true;
+            this.scene.add(roadMesh);
+          });
+        })
+        .catch(err => console.warn('Road loading failed:', err));
+      }
+
+      createTrees() {
+        // Procedural tree placement along roads
+        const treeCount = 500;
+        const treeGeo = new THREE.ConeGeometry(1.5, 6, 8);
+        treeGeo.translate(0, 3, 0); // Move up so base is at 0
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+        
+        this.treeMesh = new THREE.InstancedMesh(treeGeo, treeMat, treeCount);
+        this.treeMesh.castShadow = true;
+        this.treeMesh.receiveShadow = true;
+
+        const dummy = new THREE.Object3D();
+        
+        for (let i = 0; i < treeCount; i++) {
+          // Random position within 1000m radius
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 50 + Math.random() * 450; // Keep away from center a bit
+          
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          
+          // Random scale
+          const scale = 0.8 + Math.random() * 0.6;
+          
+          dummy.position.set(x, 0, z);
+          dummy.scale.set(scale, scale, scale);
+          dummy.updateMatrix();
+          
+          this.treeMesh.setMatrixAt(i, dummy.matrix);
+        }
+
+        this.scene.add(this.treeMesh);
+        console.log(`🌳 Added ${treeCount} trees`);
+      }
+
+      createVehicle() {
+        // Use pin position if set, otherwise default to center
+        let spawnX = 0, spawnZ = 0;
+        
+        if (spawnPosition) {
+          // Convert lat/lng to local coordinates (rough approximation)
+          // Lisbon center is at LISBON_CENTER [-9.1393, 38.7223]
+          const metersPerDegLat = 111000;
+          const metersPerDegLng = 111000 * Math.cos(38.7223 * Math.PI / 180);
+          
+          spawnX = (spawnPosition.lng - LISBON_CENTER[0]) * metersPerDegLng;
+          spawnZ = -(spawnPosition.lat - LISBON_CENTER[1]) * metersPerDegLat; // Negate for Three.js Z
+          
+          console.log('🚗 Spawning at pin location:', spawnX.toFixed(0), spawnZ.toFixed(0));
+        }
+        
+        const terrainY = this.getHeightAt(spawnX, spawnZ);
+        const chassisShape = new CANNON.Box(new CANNON.Vec3(1, 0.5, 2));
+        this.chassisBody = new CANNON.Body({
+          mass: 1500,
+          shape: chassisShape,
+          position: new CANNON.Vec3(spawnX, terrainY + 1.5, spawnZ) // Lower spawn
+        });
+
+        // Raycast Vehicle
+        this.vehicle = new CANNON.RaycastVehicle({
+          chassisBody: this.chassisBody,
+          indexRightAxis: 0,
+          indexUpAxis: 1,
+          indexForwardAxis: 2
+        });
+
+        // Wheel options
+        const wheelOptions = {
+          radius: 0.35,
+          directionLocal: new CANNON.Vec3(0, -1, 0),
+          suspensionStiffness: 30,
+          suspensionRestLength: 0.3,
+          frictionSlip: 0.8,
+          dampingRelaxation: 0.4,
+          dampingCompression: 0.4,
+          maxSuspensionForce: 100000,
+          rollInfluence: 0.01,
+          axleLocal: new CANNON.Vec3(-1, 0, 0),
+          chassisConnectionPointLocal: new CANNON.Vec3(1, 1, 0),
+          maxSuspensionTravel: 0.3,
+          customSlidingRotationalSpeed: -30,
+          useCustomSlidingRotationalSpeed: true
+        };
+
+        // Add 4 wheels - positioned to touch ground
+        const wheelPositions = [
+          { x: -0.8, y: -0.5, z: 1.2 },   // Front left
+          { x: 0.8, y: -0.5, z: 1.2 },    // Front right
+          { x: -0.8, y: -0.5, z: -1.2 },  // Rear left
+          { x: 0.8, y: -0.5, z: -1.2 }    // Rear right
+        ];
+
+        wheelPositions.forEach((pos, i) => {
+          wheelOptions.chassisConnectionPointLocal.set(pos.x, pos.y, pos.z);
+          this.vehicle.addWheel(wheelOptions);
+        });
+
+        this.vehicle.addToWorld(this.world);
+
+        // Visual car body
+        const carGeo = new THREE.BoxGeometry(2, 0.8, 4);
+        const carMat = new THREE.MeshStandardMaterial({ color: 0xe74c3c });
+        this.carMesh = new THREE.Mesh(carGeo, carMat);
+        this.carMesh.castShadow = true;
+        this.scene.add(this.carMesh);
+
+        // Visual wheels
+        this.wheelMeshes = [];
+        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 24);
+        wheelGeo.rotateZ(Math.PI / 2);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+
+        for (let i = 0; i < 4; i++) {
+          const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+          wheel.castShadow = true;
+          this.scene.add(wheel);
+          this.wheelMeshes.push(wheel);
+        }
+      }
+
+      update(input) {
+        const now = performance.now();
+        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+        this.lastTime = now;
+
+        // DEBUG: Log input state occasionally
+        if (this.frameCount % 60 === 0 && (input.w || input.s)) {
+          console.log('Input:', input, 'Velocity:', this.chassisBody.velocity.length().toFixed(2));
+        }
+
+        // Vehicle controls
+        const maxSteer = 0.5;
+        const maxForce = 3000; // Increased force
+        const brakeForce = 1000;
+
+        // Steering
+        let steer = 0;
+        if (input.a) steer = maxSteer;
+        if (input.d) steer = -maxSteer;
+        this.vehicle.setSteeringValue(steer, 0);
+        this.vehicle.setSteeringValue(steer, 1);
+
+        // Engine/brake
+        if (input.w) {
+          this.vehicle.applyEngineForce(-maxForce, 2);
+          this.vehicle.applyEngineForce(-maxForce, 3);
+          this.vehicle.setBrake(0, 0);
+          this.vehicle.setBrake(0, 1);
+          this.vehicle.setBrake(0, 2);
+          this.vehicle.setBrake(0, 3);
+        } else if (input.s) {
+          this.vehicle.applyEngineForce(maxForce * 0.5, 2);
+          this.vehicle.applyEngineForce(maxForce * 0.5, 3);
+        } else {
+          this.vehicle.applyEngineForce(0, 2);
+          this.vehicle.applyEngineForce(0, 3);
+          // Natural braking
+          this.vehicle.setBrake(100, 0);
+          this.vehicle.setBrake(100, 1);
+          this.vehicle.setBrake(100, 2);
+          this.vehicle.setBrake(100, 3);
+        }
+
+        // Handbrake
+        if (input.space) {
+          this.vehicle.setBrake(brakeForce, 2);
+          this.vehicle.setBrake(brakeForce, 3);
+        }
+
+        // Step physics
+        this.world.step(1/60);
+
+        // DEBUG: Log car position if falling
+        if (this.chassisBody.position.y < -10) {
+          console.warn('🚨 Car fell through ground! Position:', this.chassisBody.position.y);
+        }
+
+        // Sync visual meshes
+        this.carMesh.position.copy(this.chassisBody.position);
+        this.carMesh.quaternion.copy(this.chassisBody.quaternion);
+
+        for (let i = 0; i < this.vehicle.wheelInfos.length; i++) {
+          this.vehicle.updateWheelTransform(i);
+          const t = this.vehicle.wheelInfos[i].worldTransform;
+          this.wheelMeshes[i].position.copy(t.position);
+          this.wheelMeshes[i].quaternion.copy(t.quaternion);
+        }
+
+        // Update camera (first-person driver view with smoothing)
+        const carPos = this.carMesh.position;
+        const carQuat = this.carMesh.quaternion;
+
+        // Camera position: driver's seat with smooth follow
+        const driverOffset = new THREE.Vector3(0, 1.6, 0.5);
+        driverOffset.applyQuaternion(carQuat);
+        const targetPos = carPos.clone().add(driverOffset);
+        this.camera.position.lerp(targetPos, 0.15); // Smooth interpolation
+
+        // Look ahead with smooth rotation
+        const lookOffset = new THREE.Vector3(0, 0, 30);
+        lookOffset.applyQuaternion(carQuat);
+        const targetLook = carPos.clone().add(lookOffset);
+        
+        // Smooth lookAt using a dummy object
+        if (!this.lookTarget) this.lookTarget = new THREE.Vector3();
+        this.lookTarget.lerp(targetLook, 0.1);
+        this.camera.lookAt(this.lookTarget);
+
+        // Render
+        this.renderer.render(this.scene, this.camera);
+
+        // Update HUD
+        const speed = this.chassisBody.velocity.length() * 3.6;
+        document.getElementById('speed-display').textContent = Math.round(speed);
+        document.getElementById('debug-speed').textContent = Math.round(speed);
+        document.getElementById('debug-pos').textContent =
+          `${carPos.x.toFixed(1)}, ${carPos.z.toFixed(1)}`;
+
+        // Update street name
+        const streetName = this.getStreetName(carPos.x, carPos.z);
+        document.getElementById('street-name').textContent = streetName;
+
+        // FPS counter
+        this.frameCount++;
+        if (now - this.lastFpsTime > 1000) {
+          document.getElementById('debug-fps').textContent = this.frameCount;
+          this.frameCount = 0;
+          this.lastFpsTime = now;
+        }
+      }
+
+      destroy() {
+        // Clean up Three.js scene
+        this.renderer.dispose();
+        if (this.treeMesh) {
+          this.treeMesh.geometry.dispose();
+          this.treeMesh.material.dispose();
+        }
+        console.log('🧹 Drive scene destroyed');
+      }
+
+      getStreetName(x, z) {
+        // Convert local coordinates back to lat/lng for Nominatim
+        const centerLat = LISBON_CENTER[1];
+        const centerLng = LISBON_CENTER[0];
+        const metersPerDegLat = 111000;
+        const metersPerDegLng = 111000 * Math.cos(centerLat * Math.PI / 180);
+        
+        const lng = centerLng + x / metersPerDegLng;
+        const lat = centerLat - z / metersPerDegLat; // Negate because Z is inverted
+        
+        // Use cached result if available
+        const cacheKey = `${Math.round(lat * 1000)},${Math.round(lng * 1000)}`;
+        if (this.streetCache?.[cacheKey]) {
+          return this.streetCache[cacheKey];
+        }
+        
+        // Throttle API calls
+        const now = Date.now();
+        if (!this.lastStreetLookup) this.lastStreetLookup = 0;
+        if (now - this.lastStreetLookup < 2000) {
+          return this.lastStreetName || 'Carregando...';
+        }
+        this.lastStreetLookup = now;
+        
+        // Fetch from Nominatim
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+          headers: { 'User-Agent': 'Lisbon3D-GTA/1.0' }
+        })
+        .then(r => r.json())
+        .then(data => {
+          const name = data.address?.road || data.address?.street || 'Estrada Desconhecida';
+          this.lastStreetName = name;
+          if (!this.streetCache) this.streetCache = {};
+          this.streetCache[cacheKey] = name;
+        })
+        .catch(() => {
+          this.lastStreetName = 'Sem dados';
+        });
+        
+        return this.lastStreetName || 'Lisboa';
+      }
+
+      onResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+    }
+
+    // ============================================
+    // MODE SWITCHING
+    // ============================================
+    function enterGTAMode() {
+      console.log('🚗 Entering GTA Mode');
+      currentMode = 'drive';
+
+      // Hide aerial, show drive
+      document.getElementById('aerial-container').style.display = 'none';
+      document.getElementById('drive-container').style.display = 'block';
+      document.getElementById('drive-hud').style.display = 'block';
+      document.getElementById('controls-hint').style.display = 'flex';
+      document.getElementById('debug-info').style.display = 'block';
+
+      // Reset drive scene to spawn at new pin location
+      if (driveScene) {
+        driveScene.destroy();
+        driveScene = null;
+      }
+      
+      // Initialize drive scene fresh (spawns at pin if set)
+      driveScene = new GTADriveMode();
+
+      // Start game loop
+      requestAnimationFrame(gameLoop);
+
+      // Hide controls hint after 3s
+      setTimeout(() => {
+        document.getElementById('controls-hint').style.display = 'none';
+      }, 3000);
+    }
+
+    function exitGTAMode() {
+      console.log('🚁 Exiting GTA Mode');
+      currentMode = 'aerial';
+
+      // Show aerial, hide drive
+      document.getElementById('drive-container').style.display = 'none';
+      document.getElementById('aerial-container').style.display = 'block';
+      document.getElementById('drive-hud').style.display = 'none';
+      document.getElementById('controls-hint').style.display = 'none';
+      document.getElementById('debug-info').style.display = 'none';
+    }
+
+    function gameLoop() {
+      if (currentMode !== 'drive') return;
+
+      driveScene.update(keys);
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ============================================
+    // INPUT HANDLING
+    // ============================================
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (keys.hasOwnProperty(key)) keys[key] = true;
+      if (e.key === ' ') keys.space = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const key = e.key.toLowerCase();
+      if (keys.hasOwnProperty(key)) keys[key] = false;
+      if (e.key === ' ') keys.space = false;
+    });
+
+    // ============================================
+    // INIT
+    // ============================================
+    initAerialMode();
+
+    document.getElementById('enter-gta').addEventListener('click', enterGTAMode);
+    document.getElementById('exit-gta').addEventListener('click', exitGTAMode);
+
+    // Hide loading
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 1000);
+
+    console.log('🗺️ Lisbon3D GTA Prototype loaded');
+  </script>
 </body>
 </html>

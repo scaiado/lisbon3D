@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lisbon 3D Explorer</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.css">
+  <!-- Drive Mode Design System -->
+  <link rel="stylesheet" href="./css/drive-mode.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+      overflow: hidden;
+      background: var(--obsidian, #0a0a0f);
+    }
+    
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
+    
+    .map-overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    
+    body.drive-mode-active .map-overlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .map-overlay h1 {
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+    }
+    
+    .map-overlay p {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    
+    .controls {
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px;
+      border-radius: 8px;
+      color: white;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    
+    body.drive-mode-active .controls {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .controls label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+    }
+    
+    .controls input[type="range"] {
+      width: 150px;
+    }
+    
+    #pov-toggle {
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: 100%;
+      font-weight: bold;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    #pov-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    }
+    
+    #pov-toggle:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .controls {
+        bottom: 20px;
+        right: 10px;
+        left: 10px;
+        padding: 12px;
+        max-width: none;
+      }
+      
+      .controls input[type="range"] {
+        width: 100%;
+      }
+      
+      #pov-toggle {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 48px; /* Touch-friendly */
+      }
+      
+      .map-overlay {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 12px 15px;
+      }
+      
+      .map-overlay h1 {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  
+  <div class="map-overlay">
+    <h1>🇵🇹 Lisbon 3D Explorer</h1>
+    <p>Open data • Open source • MapLibre GL</p>
+  </div>
+  
+  <div class="controls">
+    <label>
+      Pitch: <span id="pitch-value">60</span>°
+      <input type="range" id="pitch" min="0" max="85" value="60">
+    </label>
+    <label>
+      Zoom: <span id="zoom-value">15</span>
+      <input type="range" id="zoom" min="10" max="18" value="15" step="0.1">
+    </label>
+    <button id="pov-toggle">
+      🚗 Enter Drive Mode
+    </button>
+    <p style="margin-top: 10px; font-size: 0.75rem; opacity: 0.8; line-height: 1.4;">
+      <b>Drive Mode:</b><br>
+      🚗 W/S = gas/brake<br>
+      🔄 A/D = steer<br>
+      P = Exit drive mode
+    </p>
+  </div>
+
+  <!-- ========================================
+       DRIVE MODE HUD
+       ======================================== -->
+  <div id="drive-hud" style="display: none;">
+    
+    <!-- Speedometer -->
+    <div class="speedometer-container">
+      <div class="speedometer-gauge" id="speedometer-gauge">
+        <svg class="speedometer-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" class="speedometer-track" stroke-dasharray="212 283" />
+          <circle cx="50" cy="50" r="45" class="speedometer-fill" id="speed-fill" stroke-dasharray="283" stroke-dashoffset="283" />
+        </svg>
+        <div class="speedometer-center">
+          <div class="speedometer-value" id="speed-value">0</div>
+          <div class="speedometer-unit">km/h</div>
+        </div>
+      </div>
+      <div class="speedometer-label">Speed</div>
+    </div>
+    
+    <!-- Score Display -->
+    <div class="score-container">
+      <div class="score-panel" id="score-panel">
+        <div class="score-icon">🏆</div>
+        <div class="score-content">
+          <div class="score-label">Score</div>
+          <div class="score-value" id="score-value">0</div>
+        </div>
+      </div>
+      <div class="distance-badge">
+        <span id="distance-value">0.0</span> km traveled
+      </div>
+    </div>
+    
+    <!-- Mini Map -->
+    <div class="minimap-container">
+      <div class="minimap-frame">
+        <div class="minimap-car"></div>
+        <div class="minimap-landmark" id="landmark-1" style="top: 20%; left: 30%; background: #9b59b6;"></div>
+        <div class="minimap-landmark" id="landmark-2" style="top: 60%; left: 70%; background: #3498db;"></div>
+        <div class="minimap-landmark" id="landmark-3" style="top: 40%; left: 80%; background: #f39c12;"></div>
+      </div>
+      <div class="minimap-label">Radar</div>
+    </div>
+    
+    <!-- Drive Controls Hint -->
+    <div class="drive-controls">
+      <div class="control-pill">
+        <span class="control-key">W</span>
+        <span>Gas</span>
+      </div>
+      <div class="control-pill">
+        <span class="control-key">S</span>
+        <span>Brake</span>
+      </div>
+      <div class="control-pill">
+        <span class="control-key">A</span>
+        <span class="control-key">D</span>
+        <span>Steer</span>
+      </div>
+      <div class="control-pill">
+        <span class="control-key">P</span>
+        <span>Exit</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Car Interior Frame Overlays -->
+  <div class="windshield-frame" id="windshield-frame"></div>
+  <div class="dashboard-silhouette" id="dashboard-silhouette"></div>
+  <div class="steering-wheel-hint" id="steering-wheel-hint"></div>
+
+  <!-- Speed Lines Effect -->
+  <div class="speed-lines" id="speed-lines"></div>
+
+  <!-- Checkpoint Popup -->
+  <div class="checkpoint-overlay" id="checkpoint-overlay" style="display: none;">
+    <div class="checkpoint-card" id="checkpoint-card">
+      <div class="checkpoint-icon">🏁</div>
+      <div class="checkpoint-title">
+        Checkpoint: <span class="checkpoint-name" id="checkpoint-name">Landmark</span>!
+      </div>
+      <div class="checkpoint-points" id="checkpoint-points">+500</div>
+      <div class="checkpoint-points-label">points</div>
+    </div>
+  </div>
+
+  <!-- Viral Moment Overlay -->
+  <div class="viral-moment" id="viral-moment" style="display: none;">
+    <div class="viral-badge">
+      <span class="viral-emoji" id="viral-emoji">💨</span>
+      <div class="viral-title" id="viral-title">Speed Demon!</div>
+      <div class="viral-subtitle" id="viral-subtitle">You hit 80 km/h</div>
+    </div>
+    <div class="viral-hint">
+      📸 Screenshot this moment!
+    </div>
+  </div>
+
+  <!-- Distance Milestone Toast -->
+  <div class="milestone-toast" id="milestone-toast" style="display: none; position: fixed; top: 120px; right: 40px;">
+    <div style="background: var(--glass-dark); border: 1px solid var(--neon-purple); 
+                border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg);
+                box-shadow: var(--shadow-glow-purple); animation: hudEntrance 0.4s ease-out;
+                display: flex; align-items: center; gap: var(--space-md);">
+      <span style="font-size: 28px;">🎯</span>
+      <div>
+        <div style="font-family: var(--font-display); font-size: 14px; color: var(--neon-purple); 
+                    font-weight: 600;">MILESTONE</div>
+        <div style="font-family: var(--font-mono); font-size: 20px; color: white; font-weight: 700;">
+          <span id="milestone-distance">1.0</span> km
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Car Dashboard Frame -->
+  <div id="car-dashboard" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 120px; 
+       background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
+       z-index: 900; pointer-events: none;">
+    <!-- Dashboard silhouette -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
+                background: linear-gradient(to top, #0a0a0f 0%, #1a1a25 100%);
+                border-top: 2px solid #333;
+                box-shadow: 0 -10px 40px rgba(0,0,0,0.8);">
+      <!-- Steering wheel hint -->
+      <div style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+                  width: 200px; height: 200px; border-radius: 50%;
+                  border: 8px solid #222;
+                  background: radial-gradient(circle, #1a1a25 30%, #0a0a0f 70%);
+                  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);"></div>
+      <!-- Dashboard lights -->
+      <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+                  display: flex; gap: 20px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 10px #00ff88;"></div>
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffaa00; box-shadow: 0 0 10px #ffaa00;"></div>
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #ff4444; box-shadow: 0 0 10px #ff4444;"></div>
+      </div>
+    </div>
+    <!-- Windshield frame -->
+    <div style="position: absolute; top: -20px; left: 20px; right: 20px; height: 40px;
+                border-left: 3px solid rgba(255,255,255,0.1);
+                border-right: 3px solid rgba(255,255,255,0.1);
+                border-top: 3px solid rgba(255,255,255,0.1);
+                border-radius: 20px 20px 0 0;
+                pointer-events: none;"></div>
+  </div>
+  
+  <script src="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.js"></script>
+  <script src="./main-simple.js"></script>
+</body>
+</html>
