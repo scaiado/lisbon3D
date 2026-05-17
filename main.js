@@ -383,53 +383,41 @@ class LisbonDriveDemo {
   }
 
   addRealityRoadMeshes(roads) {
-    const asphalt = new THREE.MeshStandardMaterial({ color: TOY_COLORS.road, roughness: 0.88 });
-    const sidewalk = new THREE.MeshStandardMaterial({ color: CALCADA_LIGHT, roughness: 0.94 });
-    const stripe = new THREE.MeshBasicMaterial({ color: 0xffd766, transparent: true, opacity: 0.78 });
-    const seamPaint = new THREE.MeshBasicMaterial({ color: TOY_COLORS.road });
+    const roadSurface = new THREE.Mesh(
+      new THREE.PlaneGeometry(
+        PLAYABLE_BOUNDS.maxX - PLAYABLE_BOUNDS.minX,
+        PLAYABLE_BOUNDS.maxZ - PLAYABLE_BOUNDS.minZ
+      ),
+      createRoadSurfaceMaterial(roads)
+    );
+    roadSurface.position.set(
+      (PLAYABLE_BOUNDS.minX + PLAYABLE_BOUNDS.maxX) / 2,
+      0.14,
+      (PLAYABLE_BOUNDS.minZ + PLAYABLE_BOUNDS.maxZ) / 2
+    );
+    roadSurface.rotation.x = -Math.PI / 2;
+    roadSurface.renderOrder = 2;
+    this.realityLayer.add(roadSurface);
+
+    const curbMaterial = new THREE.LineBasicMaterial({ color: 0xf9f2d8, transparent: true, opacity: 0.36 });
     const group = new THREE.Group();
-    const junctions = [];
 
     for (const road of roads) {
       const width = ROAD_WIDTH[road.type] || ROAD_WIDTH.lane;
-      forEachSegment(road.points, (start, end, length, midpoint, rotation) => {
-        if (length < 8 || length > 220) return;
-        junctions.push({ point: start, width });
-        junctions.push({ point: end, width });
+      forEachSegment(road.points, (start, end, length) => {
+        if (length < 8) return;
+        const dir = normalize([end[0] - start[0], end[1] - start[1]]);
+        const normal = [-dir[1], dir[0]];
 
-        const mesh = new THREE.Mesh(
-          new RoundedBoxGeometry(width, 0.09, length, 1, 0.32),
-          asphalt
-        );
-        mesh.position.set(midpoint[0], 0.07, midpoint[1]);
-        mesh.rotation.y = rotation;
-        mesh.receiveShadow = true;
-        group.add(mesh);
-
-        if (road.type !== 'lane') {
-          const centerLine = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.028, length * 0.78), stripe);
-          centerLine.position.set(midpoint[0], 0.155, midpoint[1]);
-          centerLine.rotation.y = rotation;
-          group.add(centerLine);
-        }
-
-        const walkWidth = road.type === 'lane' ? 1.7 : 2.6;
         for (const side of [-1, 1]) {
-          const walk = new THREE.Mesh(new RoundedBoxGeometry(walkWidth, 0.055, length, 1, 0.18), sidewalk);
-          walk.position.set(midpoint[0], 0.045, midpoint[1]);
-          walk.rotation.y = rotation;
-          walk.translateX(side * (width / 2 + walkWidth / 2 + 0.35));
-          walk.receiveShadow = true;
-          group.add(walk);
+          const offset = side * (width / 2 + 2.1);
+          const curb = new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(start[0] + normal[0] * offset, 0.17, start[1] + normal[1] * offset),
+            new THREE.Vector3(end[0] + normal[0] * offset, 0.17, end[1] + normal[1] * offset)
+          ]), curbMaterial);
+          group.add(curb);
         }
       });
-    }
-
-    for (const junction of mergeJunctions(junctions)) {
-      const cap = new THREE.Mesh(new THREE.CircleGeometry(junction.radius, 24), seamPaint);
-      cap.position.set(junction.x, 0.162, junction.z);
-      cap.rotation.x = -Math.PI / 2;
-      group.add(cap);
     }
 
     this.realityLayer.add(group);
@@ -1848,6 +1836,103 @@ function createTerrainMaterial() {
   });
 }
 
+function createRoadSurfaceMaterial(roads) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048;
+  canvas.height = 1800;
+  const context = canvas.getContext('2d');
+  const boundsWidth = PLAYABLE_BOUNDS.maxX - PLAYABLE_BOUNDS.minX;
+  const boundsDepth = PLAYABLE_BOUNDS.maxZ - PLAYABLE_BOUNDS.minZ;
+  const metersToPixels = canvas.width / boundsWidth;
+  const toCanvas = ([x, z]) => [
+    ((x - PLAYABLE_BOUNDS.minX) / boundsWidth) * canvas.width,
+    ((z - PLAYABLE_BOUNDS.minZ) / boundsDepth) * canvas.height
+  ];
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  for (const road of roads) {
+    const width = ROAD_WIDTH[road.type] || ROAD_WIDTH.lane;
+    strokeRoadPath(context, road.points, toCanvas, (width + 6.4) * metersToPixels, '#f4efd7');
+  }
+
+  for (const road of roads) {
+    const width = ROAD_WIDTH[road.type] || ROAD_WIDTH.lane;
+    strokeRoadPath(context, road.points, toCanvas, width * metersToPixels, '#18201d');
+  }
+
+  for (const road of roads) {
+    if (road.type === 'lane') continue;
+    strokeDashedRoadPath(context, road.points, toCanvas, 0.34 * metersToPixels, '#d9c66a', metersToPixels);
+  }
+
+  for (const road of roads) {
+    if (road.type === 'lane') continue;
+    drawCrosswalks(context, road.points, toCanvas, (ROAD_WIDTH[road.type] || ROAD_WIDTH.street) * metersToPixels);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.anisotropy = 2;
+
+  return new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false
+  });
+}
+
+function strokeRoadPath(context, points, toCanvas, width, color) {
+  if (points.length < 2) return;
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = width;
+  context.beginPath();
+  points.forEach((point, index) => {
+    const [x, y] = toCanvas(point);
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  context.stroke();
+  context.restore();
+}
+
+function strokeDashedRoadPath(context, points, toCanvas, width, color, metersToPixels) {
+  context.save();
+  context.setLineDash([9 * metersToPixels, 7 * metersToPixels]);
+  strokeRoadPath(context, points, toCanvas, width, color);
+  context.restore();
+}
+
+function drawCrosswalks(context, points, toCanvas, roadWidth) {
+  const stride = Math.max(2, Math.floor(points.length / 3));
+  context.save();
+  context.strokeStyle = 'rgba(248,245,233,0.82)';
+  context.lineWidth = 1.1;
+
+  for (let i = stride; i < points.length - 1; i += stride) {
+    const [x, y] = toCanvas(points[i]);
+    const [nextX, nextY] = toCanvas(points[i + 1]);
+    const angle = Math.atan2(nextY - y, nextX - x) + Math.PI / 2;
+
+    for (let stripe = -2; stripe <= 2; stripe += 1) {
+      const offset = stripe * 5;
+      const centerX = x + Math.cos(angle + Math.PI / 2) * offset;
+      const centerY = y + Math.sin(angle + Math.PI / 2) * offset;
+      context.beginPath();
+      context.moveTo(centerX - Math.cos(angle) * roadWidth * 0.36, centerY - Math.sin(angle) * roadWidth * 0.36);
+      context.lineTo(centerX + Math.cos(angle) * roadWidth * 0.36, centerY + Math.sin(angle) * roadWidth * 0.36);
+      context.stroke();
+    }
+  }
+
+  context.restore();
+}
+
 function simplifyFootprint(points) {
   if (points.length <= 12) return points;
   const step = Math.ceil(points.length / 12);
@@ -1962,15 +2047,16 @@ function selectPlayableRoads(roads) {
     'service'
   ]);
 
-  return roads
+  const candidates = roads
     .map((road) => ({
       ...road,
       points: road.points.filter(([x, z]) => isInsidePlayableBounds(x, z))
     }))
     .filter((road) => road.points.length >= 2 && usefulHighways.has(road.highway))
     .filter((road) => pathLength(road.points) > 16)
-    .sort((a, b) => roadPriority(b) - roadPriority(a))
-    .slice(0, 130);
+    .sort((a, b) => roadPriority(b) - roadPriority(a));
+
+  return selectConnectedRoadComponent(candidates).slice(0, 170);
 }
 
 function selectPlayableBuildings(buildings, roads) {
@@ -1990,8 +2076,9 @@ function selectPlayableBuildings(buildings, roads) {
     if (!nearest) continue;
 
     const roadWidth = ROAD_WIDTH[nearest.road.type] || ROAD_WIDTH.lane;
-    const clearance = Math.max(bounds.width, bounds.depth) * 0.28 + roadWidth * 0.85;
+    const clearance = Math.max(bounds.width, bounds.depth) * 0.34 + roadWidth * 1.05;
     if (nearest.distance < clearance || nearest.distance > 56) continue;
+    if (footprintRoadClearance(points, roads) < roadWidth * 0.74 + 3.4) continue;
 
     const key = `${Math.round(bounds.centerX / 5)}:${Math.round(bounds.centerZ / 5)}`;
     if (occupied.has(key)) continue;
@@ -2007,6 +2094,78 @@ function selectPlayableBuildings(buildings, roads) {
   return selected
     .sort((a, b) => a.height - b.height)
     .slice(0, 300);
+}
+
+function selectConnectedRoadComponent(roads) {
+  const endpointBuckets = new Map();
+
+  roads.forEach((road, roadIndex) => {
+    for (const point of road.points) {
+      const key = roadNodeKey(point);
+      const bucket = endpointBuckets.get(key) || [];
+      bucket.push(roadIndex);
+      endpointBuckets.set(key, bucket);
+    }
+  });
+
+  const adjacency = roads.map(() => new Set());
+  for (const bucket of endpointBuckets.values()) {
+    for (const a of bucket) {
+      for (const b of bucket) {
+        if (a !== b) adjacency[a].add(b);
+      }
+    }
+  }
+
+  const visited = new Set();
+  const components = [];
+
+  roads.forEach((_road, startIndex) => {
+    if (visited.has(startIndex)) return;
+    const stack = [startIndex];
+    const component = [];
+    visited.add(startIndex);
+
+    while (stack.length) {
+      const index = stack.pop();
+      component.push(index);
+      for (const next of adjacency[index]) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        stack.push(next);
+      }
+    }
+
+    components.push(component);
+  });
+
+  const spawn = START_POSITION;
+  const best = components
+    .map((component) => {
+      const componentRoads = component.map((index) => roads[index]);
+      const nearest = nearestRoadFromRoads(spawn[0], spawn[1], componentRoads);
+      const length = componentRoads.reduce((sum, road) => sum + pathLength(road.points), 0);
+      return { componentRoads, score: length - (nearest?.distance || 9999) * 18 };
+    })
+    .sort((a, b) => b.score - a.score)[0];
+
+  return best?.componentRoads || roads;
+}
+
+function roadNodeKey(point) {
+  return `${Math.round(point[0] / 10)}:${Math.round(point[1] / 10)}`;
+}
+
+function footprintRoadClearance(points, roads) {
+  let clearance = Infinity;
+  for (const point of points) {
+    const nearest = nearestRoadFromRoads(point[0], point[1], roads);
+    if (nearest) clearance = Math.min(clearance, nearest.distance);
+  }
+  const bounds = footprintBounds(points);
+  const centerNearest = nearestRoadFromRoads(bounds.centerX, bounds.centerZ, roads);
+  if (centerNearest) clearance = Math.min(clearance, centerNearest.distance);
+  return clearance;
 }
 
 function addRealityWindows(group, bounds, height, rotation, material) {
