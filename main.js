@@ -296,7 +296,7 @@ class LisbonDriveDemo {
   initThree() {
     this.canvas = document.getElementById('game-canvas');
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1) * 0.7);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
@@ -377,6 +377,7 @@ class LisbonDriveDemo {
     this.addRealityBuildingMeshes(buildings);
     this.addRealityLandHints(slice.water, 0x58c9df, 0.28);
     this.addRealityLandHints(slice.green, 0x6fbd63, 0.2);
+    this.addRealityGreenery(slice.green, roads);
     this.respawn();
     return { roads: roads.length, buildings: buildings.length };
   }
@@ -460,10 +461,6 @@ class LisbonDriveDemo {
       );
       group.add(roof);
 
-      if (bounds.width > 7 && bounds.depth > 7) {
-        addRealityWindows(group, bounds, height, rotation, windowMaterial);
-      }
-
       this.buildingColliders.push({
         x: bounds.centerX,
         z: bounds.centerZ,
@@ -533,6 +530,80 @@ class LisbonDriveDemo {
         feature.points.map(([x, z]) => new THREE.Vector3(x, 0.21, z))
       );
       group.add(new THREE.LineLoop(geometry, material));
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityGreenery(features, roads) {
+    const grassMaterial = new THREE.MeshBasicMaterial({ color: 0x9fc46a, transparent: true, opacity: 0.42 });
+    const bushMaterials = [
+      new THREE.MeshStandardMaterial({ color: 0x2f7d3b, roughness: 0.86 }),
+      new THREE.MeshStandardMaterial({ color: 0x4f9b46, roughness: 0.88 }),
+      new THREE.MeshStandardMaterial({ color: 0x6aa84f, roughness: 0.9 })
+    ];
+    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x6d4628, roughness: 0.9 });
+    const group = new THREE.Group();
+    const placed = [];
+
+    for (const feature of features.slice(0, 35)) {
+      const points = simplifyFootprint(feature.points).filter(([x, z]) => isInsidePlayableBounds(x, z));
+      if (points.length < 3) continue;
+      const bounds = footprintBounds(points);
+      if (bounds.width < 10 || bounds.depth < 10) continue;
+
+      const patch = new THREE.Mesh(createFlatShape(points), grassMaterial);
+      patch.position.y = 0.032;
+      group.add(patch);
+
+      const bushCount = Math.min(9, Math.max(2, Math.floor((bounds.width + bounds.depth) / 28)));
+      for (let i = 0; i < bushCount; i += 1) {
+        const x = bounds.centerX + (pseudoRandom(bounds.centerX + i * 19.7) - 0.5) * bounds.width * 0.75;
+        const z = bounds.centerZ + (pseudoRandom(bounds.centerZ + i * 31.1) - 0.5) * bounds.depth * 0.75;
+        if (!isInsidePlayableBounds(x, z) || nearestRoadFromRoads(x, z, roads)?.distance < 9) continue;
+        if (tooCloseToPlaced(x, z, placed, 5)) continue;
+        placed.push([x, z]);
+
+        const bush = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(1.4 + pseudoRandom(x + z) * 1.5, 0),
+          bushMaterials[i % bushMaterials.length]
+        );
+        bush.position.set(x, 0.85, z);
+        bush.scale.y = 0.58 + pseudoRandom(i + x) * 0.38;
+        bush.rotation.y = pseudoRandom(z - x) * Math.PI;
+        bush.castShadow = true;
+        group.add(bush);
+      }
+    }
+
+    for (const road of roads.slice(0, 55)) {
+      forEachSegment(road.points, (start, end, length) => {
+        if (length < 35) return;
+        const dir = normalize([end[0] - start[0], end[1] - start[1]]);
+        const normal = [-dir[1], dir[0]];
+        const count = Math.min(4, Math.floor(length / 52));
+
+        for (let i = 1; i <= count; i += 1) {
+          const t = i / (count + 1);
+          const base = [start[0] + (end[0] - start[0]) * t, start[1] + (end[1] - start[1]) * t];
+          const side = i % 2 === 0 ? 1 : -1;
+          const offset = (ROAD_WIDTH[road.type] || ROAD_WIDTH.lane) / 2 + 7 + pseudoRandom(base[0] + base[1]) * 9;
+          const x = base[0] + normal[0] * side * offset;
+          const z = base[1] + normal[1] * side * offset;
+          if (!isInsidePlayableBounds(x, z) || tooCloseToPlaced(x, z, placed, 7)) continue;
+          placed.push([x, z]);
+
+          const tree = createTree({
+            height: 3.4 + pseudoRandom(x * 0.4 + z) * 2.6,
+            canopyScale: 0.46 + pseudoRandom(z * 0.5 - x) * 0.38,
+            leafMaterial: bushMaterials[(i + Math.abs(Math.round(x))) % bushMaterials.length],
+            trunkMaterial
+          });
+          tree.position.set(x, 0.02, z);
+          tree.rotation.y = pseudoRandom(x - z) * Math.PI * 2;
+          group.add(tree);
+        }
+      });
     }
 
     this.realityLayer.add(group);
@@ -1522,6 +1593,26 @@ function injectStyles() {
       display: block;
     }
 
+    #game-canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: saturate(1.12) contrast(1.04);
+    }
+
+    .mode-drive::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(35, 28, 18, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at 40% 30%, rgba(255, 226, 150, 0.12), transparent 34%);
+      background-size: 4px 4px, 4px 4px, 100% 100%;
+      mix-blend-mode: soft-light;
+      opacity: 0.55;
+    }
+
     .panel {
       position: absolute;
       left: 24px;
@@ -1747,6 +1838,8 @@ function createTerrainMaterial() {
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(18, 18);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestMipmapNearestFilter;
 
   return new THREE.MeshStandardMaterial({
     map: texture,
@@ -1808,6 +1901,24 @@ function createFootprintExtrusion(points, height) {
   return geometry;
 }
 
+function createFlatShape(points) {
+  const unique = removeDuplicateClosingPoint(points);
+  const shape = new THREE.Shape();
+
+  unique.forEach(([x, z], index) => {
+    if (index === 0) {
+      shape.moveTo(x, -z);
+    } else {
+      shape.lineTo(x, -z);
+    }
+  });
+  shape.closePath();
+
+  const geometry = new THREE.ShapeGeometry(shape);
+  geometry.rotateX(-Math.PI / 2);
+  return geometry;
+}
+
 function removeDuplicateClosingPoint(points) {
   if (points.length < 2) return points;
   const first = points[0];
@@ -1832,10 +1943,11 @@ function mergeJunctions(junctions) {
   }
 
   return [...buckets.values()]
+    .filter((bucket) => bucket.count > 1)
     .map((bucket) => ({
       x: bucket.x / bucket.count,
       z: bucket.z / bucket.count,
-      radius: Math.max(5.5, bucket.width * 0.72 + Math.min(bucket.count, 5) * 0.7)
+      radius: clamp(bucket.width * 0.42 + Math.min(bucket.count, 5) * 0.32, 3.2, 6.2)
     }));
 }
 
@@ -1955,6 +2067,10 @@ function isInsidePlayableBounds(x, z) {
     z >= PLAYABLE_BOUNDS.minZ &&
     z <= PLAYABLE_BOUNDS.maxZ
   );
+}
+
+function tooCloseToPlaced(x, z, placed, minDistance) {
+  return placed.some(([placedX, placedZ]) => Math.hypot(x - placedX, z - placedZ) < minDistance);
 }
 
 function forEachSegment(points, callback) {
