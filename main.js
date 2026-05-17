@@ -1,6 +1,27 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import {
+  FACADE_PALETTE,
+  TOY_COLORS,
+  VEHICLE_PALETTE
+} from './src/art/toyPalette.js';
+import {
+  createBench,
+  createCarMesh,
+  createDog,
+  createKiosk,
+  createLamp,
+  createParkedCar,
+  createPerson,
+  createSeagull,
+  createToyArch,
+  createToyCastle,
+  createToyTram,
+  createTree
+} from './src/art/toyFactories.js';
+import { loadLisbonRealitySlice } from './src/geo/osmRealitySlice.js';
 
 const LISBON_CENTER = [-9.1393, 38.7223];
 const DEG_PER_METER_LAT = 1 / 111_320;
@@ -119,6 +140,19 @@ const LANDMARKS = [
 ];
 
 const START_POSITION = [-230, 285];
+const TERRACOTTA = TOY_COLORS.terracotta;
+const AZULEJO_BLUE = TOY_COLORS.azulejoBlue;
+const CALCADA_LIGHT = TOY_COLORS.calcadaLight;
+const CALCADA_DARK = TOY_COLORS.calcadaDark;
+const RIVER_START_Z = 520;
+const RIVER_CENTER_Z = 620;
+const RIVER_WIDTH = 180;
+const PLAYABLE_BOUNDS = {
+  minX: -520,
+  maxX: 520,
+  minZ: -380,
+  maxZ: 535
+};
 
 class LisbonDriveDemo {
   constructor(root) {
@@ -127,6 +161,15 @@ class LisbonDriveDemo {
     this.keys = new Set();
     this.clock = new THREE.Clock();
     this.lastMapSync = 0;
+    this.buildingColliders = [];
+    this.staticColliders = [];
+    this.actors = [];
+    this.roads = ROADS;
+    this.audio = null;
+    this.realitySlice = null;
+    this.roadLayer = new THREE.Group();
+    this.buildingLayer = new THREE.Group();
+    this.realityLayer = new THREE.Group();
 
     this.car = this.createCarState();
   }
@@ -138,6 +181,7 @@ class LisbonDriveDemo {
     this.initThree();
     this.bindEvents();
     this.animate();
+    this.loadRealityGeometry();
   }
 
   renderShell() {
@@ -149,8 +193,8 @@ class LisbonDriveDemo {
             <p class="eyebrow">Lisbon3D / local playable slice</p>
             <h1>Drop from the map into a tiny Lisbon driving demo.</h1>
             <p>
-              MapLibre handles the city context. Three.js owns the playable world, so drive mode
-              stays fast and deterministic even before we add live OSM ingestion.
+              MapLibre handles the city context. Three.js owns the playable world, with an
+              optional OSM reality layer for real building and road fingerprints.
             </p>
             <button class="primary-action" data-action="drive">Enter Drive Mode</button>
           </div>
@@ -160,8 +204,9 @@ class LisbonDriveDemo {
           <canvas id="game-canvas"></canvas>
           <div class="panel drive-panel">
             <p class="eyebrow">Drive Mode</p>
-            <h2>Baixa arcade physics</h2>
-            <p>WASD or arrows to drive. Space brakes. R respawns. M returns to the map.</p>
+            <h2>Baixa toy drive</h2>
+            <p>WASD/arrows drive. Shift boosts. Space brakes. R respawns. M map.</p>
+            <p class="reality-chip" data-reality-status>toy Lisbon ready</p>
             <button class="secondary-action" data-action="map">Back To Aerial</button>
           </div>
           <div class="hud">
@@ -213,7 +258,7 @@ class LisbonDriveDemo {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
-          features: ROADS.map((road) => ({
+          features: this.roads.map((road) => ({
             type: 'Feature',
             properties: { name: road.name, type: road.type },
             geometry: {
@@ -252,29 +297,39 @@ class LisbonDriveDemo {
     this.canvas = document.getElementById('game-canvas');
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.08;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf5efe3);
-    this.scene.fog = new THREE.Fog(0xf5efe3, 320, 980);
+    this.scene.background = new THREE.Color(0x9fc9df);
+    this.scene.fog = new THREE.Fog(0x9fc9df, 420, 1250);
+    this.scene.add(this.roadLayer, this.buildingLayer);
+    this.scene.add(this.realityLayer);
 
-    this.camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1600);
+    this.camera = new THREE.PerspectiveCamera(68, 1, 0.1, 1800);
 
-    const sun = new THREE.DirectionalLight(0xfff2d0, 2.8);
-    sun.position.set(-180, 280, -220);
+    const sun = new THREE.DirectionalLight(0xffe0a3, 3.2);
+    sun.position.set(-220, 320, -180);
     sun.castShadow = true;
     sun.shadow.camera.left = -500;
     sun.shadow.camera.right = 500;
     sun.shadow.camera.top = 500;
     sun.shadow.camera.bottom = -500;
-    this.scene.add(sun, new THREE.HemisphereLight(0xcfe8ff, 0x7c5a38, 1.7));
+    this.scene.add(sun, new THREE.HemisphereLight(0xbfe8ff, 0xc88f5a, 1.85));
 
     this.addGround();
     this.addRoads();
     this.addBuildings();
+    this.addVegetation();
+    this.addLisbonDetails();
+    this.addCityLife();
+    this.addWeather();
     this.addLandmarks();
-    this.carMesh = this.createCarMesh();
+    this.carMesh = createCarMesh();
+    this.carMesh.scale.setScalar(0.58);
     this.carMesh.position.copy(this.car.position);
     this.syncCarMesh();
     this.scene.add(this.carMesh);
@@ -283,52 +338,341 @@ class LisbonDriveDemo {
     this.snapCameraToCar();
   }
 
+  async loadRealityGeometry() {
+    this.setRealityStatus('checking OSM reality layer');
+
+    try {
+      const slice = await loadLisbonRealitySlice({
+        project: ([lng, lat]) => lngLatToWorld(lng, lat)
+      });
+      this.realitySlice = slice;
+      const applied = this.addRealityGeometry(slice);
+      this.addRealityMapOverlay(slice);
+      this.setRealityStatus(`${applied.buildings} real buildings / ${applied.roads} real roads`);
+    } catch (error) {
+      this.setRealityStatus('toy layer active; OSM unavailable');
+      console.info('[Lisbon3D] OSM reality layer skipped:', error);
+    }
+  }
+
+  addRealityGeometry(slice) {
+    this.realityLayer.clear();
+    const roads = selectPlayableRoads(slice.roads);
+    const buildings = selectPlayableBuildings(slice.buildings, roads);
+
+    if (roads.length < 8 || buildings.length < 20) {
+      this.addRealityRoadHints(slice.roads);
+      this.addRealityFootprints(slice.buildings);
+      this.addRealityLandHints(slice.water, 0x58c9df, 0.28);
+      this.addRealityLandHints(slice.green, 0x6fbd63, 0.2);
+      return { roads: roads.length, buildings: buildings.length };
+    }
+
+    this.roads = roads;
+    this.roadLayer.visible = false;
+    this.buildingLayer.visible = false;
+    this.buildingColliders = [];
+
+    this.addRealityRoadMeshes(roads);
+    this.addRealityBuildingMeshes(buildings);
+    this.addRealityLandHints(slice.water, 0x58c9df, 0.28);
+    this.addRealityLandHints(slice.green, 0x6fbd63, 0.2);
+    this.respawn();
+    return { roads: roads.length, buildings: buildings.length };
+  }
+
+  addRealityRoadMeshes(roads) {
+    const asphalt = new THREE.MeshStandardMaterial({ color: TOY_COLORS.road, roughness: 0.88 });
+    const sidewalk = new THREE.MeshStandardMaterial({ color: CALCADA_LIGHT, roughness: 0.94 });
+    const stripe = new THREE.MeshBasicMaterial({ color: 0xffd766, transparent: true, opacity: 0.78 });
+    const seamPaint = new THREE.MeshBasicMaterial({ color: TOY_COLORS.road });
+    const group = new THREE.Group();
+    const junctions = [];
+
+    for (const road of roads) {
+      const width = ROAD_WIDTH[road.type] || ROAD_WIDTH.lane;
+      forEachSegment(road.points, (start, end, length, midpoint, rotation) => {
+        if (length < 8 || length > 220) return;
+        junctions.push({ point: start, width });
+        junctions.push({ point: end, width });
+
+        const mesh = new THREE.Mesh(
+          new RoundedBoxGeometry(width, 0.09, length, 1, 0.32),
+          asphalt
+        );
+        mesh.position.set(midpoint[0], 0.07, midpoint[1]);
+        mesh.rotation.y = rotation;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+
+        if (road.type !== 'lane') {
+          const centerLine = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.028, length * 0.78), stripe);
+          centerLine.position.set(midpoint[0], 0.155, midpoint[1]);
+          centerLine.rotation.y = rotation;
+          group.add(centerLine);
+        }
+
+        const walkWidth = road.type === 'lane' ? 1.7 : 2.6;
+        for (const side of [-1, 1]) {
+          const walk = new THREE.Mesh(new RoundedBoxGeometry(walkWidth, 0.055, length, 1, 0.18), sidewalk);
+          walk.position.set(midpoint[0], 0.045, midpoint[1]);
+          walk.rotation.y = rotation;
+          walk.translateX(side * (width / 2 + walkWidth / 2 + 0.35));
+          walk.receiveShadow = true;
+          group.add(walk);
+        }
+      });
+    }
+
+    for (const junction of mergeJunctions(junctions)) {
+      const cap = new THREE.Mesh(new THREE.CircleGeometry(junction.radius, 24), seamPaint);
+      cap.position.set(junction.x, 0.162, junction.z);
+      cap.rotation.x = -Math.PI / 2;
+      group.add(cap);
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityBuildingMeshes(buildings) {
+    const roofMaterial = new THREE.MeshStandardMaterial({ color: TERRACOTTA, roughness: 0.78 });
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x1f5a72, roughness: 0.4, metalness: 0.08 });
+    const group = new THREE.Group();
+
+    for (const building of buildings) {
+      const points = simplifyFootprint(building.points);
+      const bounds = footprintBounds(points);
+      const height = clamp(building.height * 0.92, 4, 42);
+      const rotation = dominantFootprintRotation(building.points);
+      const material = new THREE.MeshStandardMaterial({
+        color: FACADE_PALETTE[Math.abs(Math.round(bounds.centerX + bounds.centerZ)) % FACADE_PALETTE.length],
+        roughness: 0.76
+      });
+
+      const body = new THREE.Mesh(createFootprintExtrusion(points, height), material);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      const roof = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(points.map(([x, z]) => new THREE.Vector3(x, height + 0.08, z))),
+        new THREE.LineBasicMaterial({ color: TERRACOTTA, transparent: true, opacity: 0.9 })
+      );
+      group.add(roof);
+
+      if (bounds.width > 7 && bounds.depth > 7) {
+        addRealityWindows(group, bounds, height, rotation, windowMaterial);
+      }
+
+      this.buildingColliders.push({
+        x: bounds.centerX,
+        z: bounds.centerZ,
+        halfWidth: bounds.width / 2 + 1.1,
+        halfDepth: bounds.depth / 2 + 1.1,
+        rotation
+      });
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityRoadHints(roads) {
+    const material = new THREE.LineBasicMaterial({ color: 0xf9d37a, transparent: true, opacity: 0.24 });
+    const group = new THREE.Group();
+
+    for (const road of roads.slice(0, 180)) {
+      if (road.points.length < 2) continue;
+      const geometry = new THREE.BufferGeometry().setFromPoints(
+        road.points.map(([x, z]) => new THREE.Vector3(x, 0.19, z))
+      );
+      group.add(new THREE.Line(geometry, material));
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityFootprints(buildings) {
+    const outlineMaterial = new THREE.LineBasicMaterial({ color: 0x17324a, transparent: true, opacity: 0.2 });
+    const capMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
+    const group = new THREE.Group();
+
+    for (const building of buildings.slice(0, 260)) {
+      const points = simplifyFootprint(building.points);
+      if (points.length < 4) continue;
+      const bounds = footprintBounds(points);
+
+      if (bounds.centerZ > RIVER_START_Z - 8 || bounds.width < 3 || bounds.depth < 3) continue;
+      if (this.distanceToRoads(bounds.centerX, bounds.centerZ) < 5) continue;
+
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints(
+        points.map(([x, z]) => new THREE.Vector3(x, 0.22, z))
+      );
+      group.add(new THREE.LineLoop(lineGeometry, outlineMaterial));
+
+      if (building.height > 18 && bounds.width < 42 && bounds.depth < 42) {
+        const cap = new THREE.Mesh(
+          new RoundedBoxGeometry(bounds.width, 0.18, bounds.depth, 1, 0.3),
+          capMaterial
+        );
+        cap.position.set(bounds.centerX, Math.min(18, building.height) + 0.1, bounds.centerZ);
+        cap.castShadow = true;
+        group.add(cap);
+      }
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityLandHints(features, color, opacity) {
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    const group = new THREE.Group();
+
+    for (const feature of features.slice(0, 80)) {
+      if (feature.points.length < 3) continue;
+      const geometry = new THREE.BufferGeometry().setFromPoints(
+        feature.points.map(([x, z]) => new THREE.Vector3(x, 0.21, z))
+      );
+      group.add(new THREE.LineLoop(geometry, material));
+    }
+
+    this.realityLayer.add(group);
+  }
+
+  addRealityMapOverlay(slice) {
+    if (!this.map?.isStyleLoaded()) return;
+
+    const sourceId = 'osm-reality-roads';
+    const data = {
+      type: 'FeatureCollection',
+      features: slice.roads.slice(0, 220).map((road) => ({
+        type: 'Feature',
+        properties: { name: road.name, type: road.type, highway: road.highway },
+        geometry: { type: 'LineString', coordinates: road.coordinates }
+      }))
+    };
+
+    if (this.map.getSource(sourceId)) {
+      this.map.getSource(sourceId).setData(data);
+      return;
+    }
+
+    this.map.addSource(sourceId, { type: 'geojson', data });
+    this.map.addLayer({
+      id: 'osm-reality-roads',
+      type: 'line',
+      source: sourceId,
+      paint: {
+        'line-color': '#f9d37a',
+        'line-width': 2,
+        'line-opacity': 0.55
+      }
+    });
+  }
+
+  setRealityStatus(message) {
+    const status = document.querySelector('[data-reality-status]');
+    if (status) status.textContent = message;
+  }
+
   addGround() {
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(1300, 1300),
-      new THREE.MeshStandardMaterial({ color: 0xd9c6a4, roughness: 0.95 })
+      createTerrainMaterial()
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
 
     const river = new THREE.Mesh(
-      new THREE.PlaneGeometry(1300, 220),
-      new THREE.MeshStandardMaterial({ color: 0x5eb6d9, roughness: 0.55, metalness: 0.05 })
+      new THREE.PlaneGeometry(1300, RIVER_WIDTH),
+      new THREE.MeshStandardMaterial({ color: TOY_COLORS.river, roughness: 0.32, metalness: 0.05 })
     );
-    river.position.set(0, 0.015, 585);
+    river.position.set(0, 0.015, RIVER_CENTER_Z);
     river.rotation.x = -Math.PI / 2;
     this.scene.add(river);
+
+    for (let i = 0; i < 9; i += 1) {
+      const wave = new THREE.Mesh(
+        new THREE.BoxGeometry(95 + i * 9, 0.018, 0.42),
+        new THREE.MeshBasicMaterial({ color: 0xe8fbff, transparent: true, opacity: 0.34 })
+      );
+      wave.position.set(-460 + i * 118, 0.04, RIVER_CENTER_Z - 38 + (i % 3) * 27);
+      wave.rotation.y = 0.12 + i * 0.03;
+      this.scene.add(wave);
+    }
+
+    const riverGlow = new THREE.Mesh(
+      new THREE.PlaneGeometry(1300, 26),
+      new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.22 })
+    );
+    riverGlow.position.set(0, 0.025, RIVER_START_Z - 8);
+    riverGlow.rotation.x = -Math.PI / 2;
+    this.scene.add(riverGlow);
+
+    const quay = new THREE.Mesh(
+      new RoundedBoxGeometry(1300, 0.34, 6, 2, 0.7),
+      new THREE.MeshStandardMaterial({ color: 0xdec98f, roughness: 0.82 })
+    );
+    quay.position.set(0, 0.14, RIVER_START_Z);
+    quay.receiveShadow = true;
+    this.scene.add(quay);
   }
 
   addRoads() {
-    const asphalt = new THREE.MeshStandardMaterial({ color: 0x262a2d, roughness: 0.88 });
-    const stripe = new THREE.MeshBasicMaterial({ color: 0xf4d35e });
+    const asphalt = new THREE.MeshStandardMaterial({ color: TOY_COLORS.road, roughness: 0.86 });
+    const stripe = new THREE.MeshBasicMaterial({ color: 0xffd766 });
+    const sidewalk = new THREE.MeshStandardMaterial({ color: CALCADA_LIGHT, roughness: 0.92 });
+    const mosaic = new THREE.MeshBasicMaterial({ color: CALCADA_DARK });
 
-    for (const road of ROADS) {
+    for (const road of this.roads) {
       forEachSegment(road.points, (start, end, length, midpoint, rotation) => {
         const mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(ROAD_WIDTH[road.type], 0.06, length),
+          new RoundedBoxGeometry(ROAD_WIDTH[road.type], 0.08, length, 1, 0.35),
           asphalt
         );
         mesh.position.set(midpoint[0], 0.04, midpoint[1]);
         mesh.rotation.y = rotation;
         mesh.receiveShadow = true;
-        this.scene.add(mesh);
+        this.roadLayer.add(mesh);
 
         const centerLine = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, length * 0.86), stripe);
         centerLine.position.set(midpoint[0], 0.085, midpoint[1]);
         centerLine.rotation.y = rotation;
-        this.scene.add(centerLine);
+        this.roadLayer.add(centerLine);
+
+        const sidewalkWidth = road.type === 'lane' ? 2.4 : 3.8;
+        for (const side of [-1, 1]) {
+          const offset = side * (ROAD_WIDTH[road.type] / 2 + sidewalkWidth / 2 + 0.65);
+          const walk = new THREE.Mesh(new RoundedBoxGeometry(sidewalkWidth, 0.08, length, 1, 0.25), sidewalk);
+          walk.position.set(midpoint[0], 0.06, midpoint[1]);
+          walk.rotation.y = rotation;
+          walk.translateX(offset);
+          walk.receiveShadow = true;
+          this.roadLayer.add(walk);
+
+          const tileCount = Math.max(1, Math.floor(length / 32));
+          for (let i = 0; i < tileCount; i += 1) {
+            const tile = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.018, 6.5), mosaic);
+            tile.position.set(midpoint[0], 0.088, midpoint[1]);
+            tile.rotation.y = rotation + (i % 2 === 0 ? 0.55 : -0.55);
+            tile.translateX(offset);
+            tile.translateZ(-length / 2 + 16 + i * 32);
+            this.roadLayer.add(tile);
+          }
+        }
       });
     }
   }
 
   addBuildings() {
-    const palette = [0xf3dfbd, 0xe8c48f, 0xc98958, 0xf8ead1, 0xd7b98b];
+    const roofMaterial = new THREE.MeshStandardMaterial({ color: TERRACOTTA, roughness: 0.78 });
+    const tileMaterial = new THREE.MeshStandardMaterial({ color: AZULEJO_BLUE, roughness: 0.5 });
+    const balconyMaterial = new THREE.MeshStandardMaterial({ color: 0x24323f, roughness: 0.62, metalness: 0.18 });
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x2f6f93, roughness: 0.28, metalness: 0.08 });
+    const awningMaterial = new THREE.MeshStandardMaterial({ color: 0xe54b4b, roughness: 0.7 });
     const occupied = new Set();
 
-    for (const road of ROADS) {
+    for (const road of this.roads) {
       forEachSegment(road.points, (start, end, length, _midpoint, rotation) => {
         const count = Math.max(2, Math.floor(length / 42));
         const dir = normalize([end[0] - start[0], end[1] - start[1]]);
@@ -346,24 +690,428 @@ class LisbonDriveDemo {
             const z = base[1] + normal[1] * side * (ROAD_WIDTH[road.type] * 0.72 + depth);
             const key = `${Math.round(x / 18)}:${Math.round(z / 18)}`;
 
+            if (z + depth / 2 > RIVER_START_Z - 12) continue;
             if (occupied.has(key) || this.distanceToRoads(x, z) < ROAD_WIDTH[road.type] * 0.8) continue;
             occupied.add(key);
 
             const building = new THREE.Mesh(
-              new THREE.BoxGeometry(width, height, depth),
+              new RoundedBoxGeometry(width, height, depth, 2, 0.7),
               new THREE.MeshStandardMaterial({
-                color: palette[(i + (side > 0 ? 2 : 0)) % palette.length],
-                roughness: 0.78
+                color: FACADE_PALETTE[(i + (side > 0 ? 2 : 0)) % FACADE_PALETTE.length],
+                roughness: 0.74
               })
             );
             building.position.set(x, height / 2, z);
             building.rotation.y = rotation + (side > 0 ? 0.05 : -0.05);
             building.castShadow = true;
             building.receiveShadow = true;
-            this.scene.add(building);
+            this.buildingLayer.add(building);
+            this.addFacadeDetails({
+              x,
+              z,
+              width,
+              height,
+              depth,
+              rotation: building.rotation.y,
+              windowMaterial,
+              awningMaterial
+            });
+            this.buildingColliders.push({
+              x,
+              z,
+              halfWidth: width / 2 + 1.45,
+              halfDepth: depth / 2 + 1.45,
+              rotation: building.rotation.y
+            });
+
+            const roof = new THREE.Mesh(
+              new RoundedBoxGeometry(width * 1.08, 0.7, depth * 1.06, 1, 0.4),
+              roofMaterial
+            );
+            roof.position.set(x, height + 0.28, z);
+            roof.rotation.y = building.rotation.y;
+            roof.castShadow = true;
+            this.buildingLayer.add(roof);
+
+            if ((i + side) % 2 === 0) {
+              const tilePanel = new THREE.Mesh(
+                new THREE.BoxGeometry(width * 0.5, Math.min(6, height * 0.45), 0.16),
+                tileMaterial
+              );
+              tilePanel.position.set(x, Math.min(height - 2.2, 6.2), z);
+              tilePanel.rotation.y = building.rotation.y;
+              tilePanel.translateZ(-depth / 2 - 0.12);
+              this.buildingLayer.add(tilePanel);
+            }
+
+            if (height > 18) {
+              const balcony = new THREE.Mesh(
+                new THREE.BoxGeometry(width * 0.62, 0.18, 0.42),
+                balconyMaterial
+              );
+              balcony.position.set(x, 8.8, z);
+              balcony.rotation.y = building.rotation.y;
+              balcony.translateZ(-depth / 2 - 0.38);
+              balcony.castShadow = true;
+              this.buildingLayer.add(balcony);
+            }
           }
         }
       });
+    }
+  }
+
+  addFacadeDetails({ x, z, width, height, depth, rotation, windowMaterial, awningMaterial }) {
+    const floors = Math.max(2, Math.min(6, Math.floor(height / 5)));
+    const columns = Math.max(2, Math.min(5, Math.floor(width / 5)));
+    const facadeDepth = -depth / 2 - 0.14;
+
+    for (let floor = 0; floor < floors; floor += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const window = new THREE.Mesh(
+          new RoundedBoxGeometry(1.1, 1.35, 0.12, 1, 0.08),
+          windowMaterial
+        );
+        window.position.set(x, 3.2 + floor * 4.2, z);
+        window.rotation.y = rotation;
+        window.translateX((column - (columns - 1) / 2) * (width / (columns + 0.7)));
+        window.translateZ(facadeDepth);
+        this.buildingLayer.add(window);
+      }
+    }
+
+    if (width > 18) {
+      const awning = new THREE.Mesh(
+        new RoundedBoxGeometry(width * 0.46, 0.34, 0.8, 1, 0.12),
+        awningMaterial
+      );
+      awning.position.set(x, 2.65, z);
+      awning.rotation.y = rotation;
+      awning.translateZ(facadeDepth - 0.28);
+      awning.castShadow = true;
+      this.buildingLayer.add(awning);
+    }
+  }
+
+  addVegetation() {
+    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.9 });
+    const leafMaterials = [
+      new THREE.MeshStandardMaterial({ color: 0x2f6f3e, roughness: 0.82 }),
+      new THREE.MeshStandardMaterial({ color: 0x3f8f46, roughness: 0.86 }),
+      new THREE.MeshStandardMaterial({ color: 0x6a8f3f, roughness: 0.88 })
+    ];
+    const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x4f7f3f, roughness: 0.9 });
+    const vegetation = new THREE.Group();
+
+    for (const road of this.roads) {
+      forEachSegment(road.points, (start, end, length) => {
+        const dir = normalize([end[0] - start[0], end[1] - start[1]]);
+        const normal = [-dir[1], dir[0]];
+        const count = Math.max(1, Math.floor(length / 58));
+
+        for (let i = 1; i <= count; i += 1) {
+          const t = (i - 0.35) / (count + 0.3);
+          const base = [
+            start[0] + (end[0] - start[0]) * t,
+            start[1] + (end[1] - start[1]) * t
+          ];
+
+          for (const side of [-1, 1]) {
+            const seed = pseudoRandom(base[0] * 0.13 + base[1] * 0.07 + side * 17 + i);
+            const offset = ROAD_WIDTH[road.type] * 0.82 + 7 + seed * 12;
+            const x = base[0] + normal[0] * side * offset;
+            const z = base[1] + normal[1] * side * offset;
+
+            if (this.distanceToRoads(x, z) < ROAD_WIDTH[road.type] * 0.72 || Math.abs(z) > 540) continue;
+
+            const tree = createTree({
+              height: 5.5 + seed * 4,
+              canopyScale: 0.85 + seed * 0.55,
+              leafMaterial: leafMaterials[(i + (side > 0 ? 1 : 0)) % leafMaterials.length],
+              trunkMaterial
+            });
+            tree.position.set(x, 0, z);
+            tree.rotation.y = seed * Math.PI * 2;
+            vegetation.add(tree);
+
+            if (seed > 0.45) {
+              const shrub = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(1.2 + seed * 0.9, 0),
+                shrubMaterial
+              );
+              shrub.position.set(
+                x + normal[0] * side * (2.5 + seed * 2),
+                0.8,
+                z + normal[1] * side * (2.5 + seed * 2)
+              );
+              shrub.scale.set(1.2, 0.7, 1);
+              shrub.castShadow = true;
+              vegetation.add(shrub);
+            }
+          }
+        }
+      });
+    }
+
+    this.scene.add(vegetation);
+  }
+
+  addLisbonDetails() {
+    this.addCalcadaPlaza([-72, 285], 105, 58);
+    this.addToyArch([-8, 285]);
+    this.addToyCastle([344, -44]);
+    this.addToyTram([-120, -55], segmentHeading([-135, -120], [-105, -45]));
+    this.addTramRails();
+    this.addStreetFurniture();
+  }
+
+  addStreetFurniture() {
+    const group = new THREE.Group();
+    const lampMetal = new THREE.MeshStandardMaterial({ color: 0x1d2a2f, roughness: 0.55, metalness: 0.2 });
+    const lampGlow = new THREE.MeshBasicMaterial({ color: 0xffe7a3 });
+    const benchWood = new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness: 0.78 });
+    const kioskRed = new THREE.MeshStandardMaterial({ color: 0xb53b2d, roughness: 0.62 });
+    const kioskCream = new THREE.MeshStandardMaterial({ color: 0xf6e7c8, roughness: 0.75 });
+    const crosswalkPaint = new THREE.MeshBasicMaterial({ color: 0xf8f5e9 });
+
+    for (const road of this.roads) {
+      forEachSegment(road.points, (start, end, length, midpoint, rotation) => {
+        if (length > 70) {
+          const crosswalk = new THREE.Group();
+          for (let stripe = -2; stripe <= 2; stripe += 1) {
+            const mark = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH[road.type] * 0.72, 0.02, 0.7), crosswalkPaint);
+            mark.position.set(midpoint[0], 0.13, midpoint[1]);
+            mark.rotation.y = rotation;
+            mark.translateZ(stripe * 1.4);
+            crosswalk.add(mark);
+          }
+          group.add(crosswalk);
+        }
+
+        const dir = normalize([end[0] - start[0], end[1] - start[1]]);
+        const normal = [-dir[1], dir[0]];
+        const detailCount = Math.max(1, Math.floor(length / 85));
+        for (let i = 1; i <= detailCount; i += 1) {
+          const t = i / (detailCount + 1);
+          const base = [start[0] + (end[0] - start[0]) * t, start[1] + (end[1] - start[1]) * t];
+          for (const side of [-1, 1]) {
+            const x = base[0] + normal[0] * side * (ROAD_WIDTH[road.type] / 2 + 5.4);
+            const z = base[1] + normal[1] * side * (ROAD_WIDTH[road.type] / 2 + 5.4);
+            if (z > RIVER_START_Z - 6 || this.distanceToRoads(x, z) < ROAD_WIDTH[road.type] * 0.45) continue;
+
+            const lamp = createLamp(lampMetal, lampGlow);
+            lamp.position.set(x, 0.12, z);
+            group.add(lamp);
+
+            if ((i + side) % 3 === 0) {
+              const bench = createBench(benchWood, lampMetal);
+              bench.position.set(x + normal[0] * side * 3, 0.1, z + normal[1] * side * 3);
+              bench.rotation.y = segmentHeading(start, end);
+              group.add(bench);
+            }
+          }
+        }
+      });
+    }
+
+    for (const [x, z] of [[-95, 262], [42, 308], [190, 498], [-255, 486]]) {
+      const kiosk = createKiosk(kioskRed, kioskCream);
+      kiosk.position.set(x, 0.1, z);
+      kiosk.rotation.y = pseudoRandom(x + z) * Math.PI;
+      group.add(kiosk);
+    }
+
+    this.scene.add(group);
+  }
+
+  addCalcadaPlaza(center, width, depth) {
+    const plaza = new THREE.Group();
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(width, 0.045, depth),
+      new THREE.MeshStandardMaterial({ color: CALCADA_LIGHT, roughness: 0.94 })
+    );
+    base.position.set(center[0], 0.11, center[1]);
+    base.receiveShadow = true;
+    plaza.add(base);
+
+    const dark = new THREE.MeshBasicMaterial({ color: CALCADA_DARK });
+    for (let i = -4; i <= 4; i += 1) {
+      const wave = new THREE.Mesh(new THREE.BoxGeometry(width * 0.84, 0.018, 0.42), dark);
+      wave.position.set(center[0], 0.145, center[1] + i * 5.2);
+      wave.rotation.y = Math.sin(i) * 0.26;
+      plaza.add(wave);
+    }
+
+    this.scene.add(plaza);
+  }
+
+  addToyArch(position) {
+    const arch = createToyArch();
+    arch.position.set(position[0], 0.08, position[1]);
+    arch.rotation.y = -0.2;
+    this.scene.add(arch);
+  }
+
+  addToyCastle(position) {
+    const castle = createToyCastle();
+    castle.position.set(position[0], 0.08, position[1]);
+    castle.rotation.y = 0.42;
+    this.scene.add(castle);
+  }
+
+  addToyTram(position, heading) {
+    const tram = createToyTram();
+    tram.position.set(position[0], 0.12, position[1]);
+    tram.rotation.y = -heading;
+    this.scene.add(tram);
+  }
+
+  addTramRails() {
+    const railMaterial = new THREE.MeshStandardMaterial({ color: 0x6f7374, roughness: 0.52, metalness: 0.35 });
+    const road = this.roads.find((candidate) => candidate.name === 'Rua Augusta');
+    if (!road) return;
+
+    forEachSegment(road.points, (start, end, length, midpoint, rotation) => {
+      for (const x of [-1.15, 1.15]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, length), railMaterial);
+        rail.position.set(midpoint[0], 0.14, midpoint[1]);
+        rail.rotation.y = rotation;
+        rail.translateX(x);
+        this.scene.add(rail);
+      }
+    });
+  }
+
+  addCityLife() {
+    const life = new THREE.Group();
+    const carColors = VEHICLE_PALETTE;
+
+    this.roads.forEach((road, roadIndex) => {
+      const length = pathLength(road.points);
+      const pedestrianCount = road.type === 'lane' ? 5 : 8;
+      const trafficCount = road.type === 'lane' ? 2 : 4;
+
+      for (let i = 0; i < pedestrianCount; i += 1) {
+        const side = i % 2 === 0 ? 1 : -1;
+        const actor = {
+          mesh: createPerson((roadIndex + i) % 5),
+          route: road.points,
+          distance: ((i + 0.25) / pedestrianCount) * length,
+          speed: 1.3 + pseudoRandom(roadIndex * 9 + i) * 1.1,
+          offset: side * (ROAD_WIDTH[road.type] / 2 + 4.1),
+          direction: i % 3 === 0 ? -1 : 1,
+          bob: pseudoRandom(i * 31 + roadIndex) * Math.PI * 2,
+          kind: 'person',
+          radius: 0.64
+        };
+        this.updatePathActor(actor, 0);
+        actor.mesh.scale.setScalar(0.84);
+        this.actors.push(actor);
+        life.add(actor.mesh);
+      }
+
+      for (let i = 0; i < trafficCount; i += 1) {
+        const actor = {
+          mesh: createParkedCar(carColors[(roadIndex + i) % carColors.length]),
+          route: road.points,
+          distance: ((i + 0.5) / trafficCount) * length,
+          speed: 6 + pseudoRandom(roadIndex * 17 + i) * 5,
+          offset: i % 2 === 0 ? -ROAD_WIDTH[road.type] * 0.21 : ROAD_WIDTH[road.type] * 0.21,
+          direction: i % 2 === 0 ? 1 : -1,
+          bob: 0,
+          kind: 'traffic',
+          radius: 1.28
+        };
+        this.updatePathActor(actor, 0);
+        actor.mesh.scale.setScalar(0.58);
+        this.actors.push(actor);
+        life.add(actor.mesh);
+      }
+
+      if (roadIndex % 2 === 0) {
+        const dog = {
+          mesh: createDog(),
+          route: road.points,
+          distance: length * (0.2 + pseudoRandom(roadIndex) * 0.55),
+          speed: 1.8 + pseudoRandom(roadIndex * 21) * 1.6,
+          offset: ROAD_WIDTH[road.type] / 2 + 6.5,
+          direction: roadIndex % 4 === 0 ? -1 : 1,
+          bob: pseudoRandom(roadIndex * 13) * Math.PI * 2,
+          kind: 'dog',
+          radius: 0.54
+        };
+        this.updatePathActor(dog, 0);
+        dog.mesh.scale.setScalar(0.68);
+        this.actors.push(dog);
+        life.add(dog.mesh);
+      }
+    });
+
+    const parkedCars = [
+      [-155, 286, -0.2, 0x2f80ed], [72, 318, -0.12, 0xf2c94c], [-150, 98, 1.35, 0x27ae60],
+      [176, 56, 1.4, 0xeb5757], [-86, -58, 0.7, 0x9b51e0], [292, -24, 1.25, 0xf2994a]
+    ];
+    for (const [x, z, yaw, color] of parkedCars) {
+      const parked = createParkedCar(color);
+      parked.position.set(x, 0.08, z);
+      parked.rotation.y = yaw;
+      life.add(parked);
+      parked.scale.setScalar(0.58);
+      this.staticColliders.push({ mesh: parked, radius: 1.28, kind: 'parked' });
+    }
+
+    for (const [x, z] of [[-35, 510], [95, 498], [220, 520], [-180, 492]]) {
+      const gull = createSeagull();
+      gull.position.set(x, 13 + pseudoRandom(x + z) * 8, z);
+      gull.rotation.y = pseudoRandom(x * z) * Math.PI;
+      life.add(gull);
+    }
+
+    this.scene.add(life);
+  }
+
+  addWeather() {
+    const clouds = new THREE.Group();
+    const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.72 });
+    for (const [x, y, z, scale] of [[-160, 95, 40, 1.1], [90, 120, 150, 1.4], [260, 88, -90, 0.9]]) {
+      const cloud = new THREE.Group();
+      for (const offset of [[0, 0, 0], [5, 1.2, 0.8], [-5, 0.6, 1.2], [1.5, 1.8, -1.2]]) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(5 * scale, 12, 8), cloudMaterial);
+        puff.position.set(offset[0] * scale, offset[1] * scale, offset[2] * scale);
+        puff.scale.y = 0.55;
+        cloud.add(puff);
+      }
+      cloud.position.set(x, y, z);
+      clouds.add(cloud);
+    }
+    this.scene.add(clouds);
+
+    this.rainGroup = new THREE.Group();
+    const rainMaterial = new THREE.MeshBasicMaterial({ color: 0xb7d9ff, transparent: true, opacity: 0.16 });
+    this.rainDrops = [];
+    for (let i = 0; i < 44; i += 1) {
+      const drop = new THREE.Mesh(new THREE.BoxGeometry(0.025, 1.7, 0.025), rainMaterial);
+      drop.position.set(
+        (pseudoRandom(i * 11.3) - 0.5) * 180,
+        18 + pseudoRandom(i * 23.7) * 55,
+        (pseudoRandom(i * 41.9) - 0.5) * 180
+      );
+      drop.rotation.z = -0.18;
+      this.rainDrops.push(drop);
+      this.rainGroup.add(drop);
+    }
+    this.scene.add(this.rainGroup);
+  }
+
+  updateWeather(dt) {
+    if (!this.rainGroup || !this.rainDrops) return;
+    this.rainGroup.position.set(this.car.position.x, 0, this.car.position.z);
+    for (const drop of this.rainDrops) {
+      drop.position.y -= 48 * dt;
+      drop.position.x += 5 * dt;
+      if (drop.position.y < 2) {
+        drop.position.y = 58 + pseudoRandom(drop.position.x + drop.position.z) * 18;
+      }
     }
   }
 
@@ -379,61 +1127,20 @@ class LisbonDriveDemo {
     }
   }
 
-  createCarMesh() {
-    const group = new THREE.Group();
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(2.1, 0.8, 4.2),
-      new THREE.MeshStandardMaterial({ color: 0xff4d2e, roughness: 0.45, metalness: 0.1 })
-    );
-    body.position.y = 0.55;
-    body.castShadow = true;
-
-    const cabin = new THREE.Mesh(
-      new THREE.BoxGeometry(1.55, 0.72, 1.65),
-      new THREE.MeshStandardMaterial({ color: 0x18202a, roughness: 0.3, metalness: 0.25 })
-    );
-    cabin.position.set(0, 1.18, -0.25);
-    cabin.castShadow = true;
-
-    const hood = new THREE.Mesh(
-      new THREE.BoxGeometry(1.55, 0.22, 0.32),
-      new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xff8f1f, emissiveIntensity: 0.28 })
-    );
-    hood.position.set(0, 0.76, -2.26);
-
-    const nose = new THREE.Mesh(
-      new THREE.ConeGeometry(0.34, 0.7, 3),
-      new THREE.MeshStandardMaterial({ color: 0xf8ead1, roughness: 0.42 })
-    );
-    nose.position.set(0, 0.9, -2.72);
-    nose.rotation.x = -Math.PI / 2;
-
-    group.add(body, cabin, hood, nose);
-
-    const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-    for (const x of [-1.12, 1.12]) {
-      for (const z of [-1.45, 1.45]) {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 18), wheelMaterial);
-        wheel.position.set(x, 0.34, z);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.castShadow = true;
-        group.add(wheel);
-      }
-    }
-
-    return group;
-  }
-
   bindEvents() {
-    document.querySelector('[data-action="drive"]').addEventListener('click', () => this.setMode('drive'));
+    document.querySelector('[data-action="drive"]').addEventListener('click', () => {
+      this.startAudio();
+      this.setMode('drive');
+    });
     document.querySelector('[data-action="map"]').addEventListener('click', () => this.setMode('aerial'));
     window.addEventListener('resize', () => this.resize());
 
     window.addEventListener('keydown', (event) => {
       const key = event.key.toLowerCase();
       this.keys.add(key);
+      this.startAudio();
 
-      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'w', 'a', 's', 'd'].includes(key)) {
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'shift', 'w', 'a', 's', 'd'].includes(key)) {
         event.preventDefault();
       }
       if (key === 'm') this.setMode('aerial');
@@ -459,8 +1166,9 @@ class LisbonDriveDemo {
   }
 
   createCarState() {
-    const position = new THREE.Vector3(START_POSITION[0], 0.38, START_POSITION[1]);
-    const spawnRoad = this.nearestRoad(position.x, position.z);
+    const requested = new THREE.Vector3(START_POSITION[0], 0.38, START_POSITION[1]);
+    const spawnRoad = this.nearestRoad(requested.x, requested.z);
+    const position = new THREE.Vector3(spawnRoad.point[0], 0.38, spawnRoad.point[1]);
 
     return {
       position,
@@ -486,50 +1194,104 @@ class LisbonDriveDemo {
 
     if (this.mode === 'drive') {
       this.updateCar(dt);
+      this.updateActors(dt);
       this.updateCamera(dt);
       this.updateHud();
+      this.updateAudio(dt);
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  startAudio() {
+    if (this.audio) {
+      this.audio.context.resume?.();
+      return;
+    }
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const context = new AudioContext();
+    const master = context.createGain();
+    const engineGain = context.createGain();
+    const engine = context.createOscillator();
+    const undertone = context.createOscillator();
+    const filter = context.createBiquadFilter();
+
+    master.gain.value = 0.045;
+    engineGain.gain.value = 0.001;
+    engine.type = 'sawtooth';
+    undertone.type = 'triangle';
+    engine.frequency.value = 52;
+    undertone.frequency.value = 26;
+    filter.type = 'lowpass';
+    filter.frequency.value = 520;
+    filter.Q.value = 0.7;
+
+    engine.connect(filter);
+    undertone.connect(filter);
+    filter.connect(engineGain);
+    engineGain.connect(master);
+    master.connect(context.destination);
+    engine.start();
+    undertone.start();
+
+    this.audio = { context, engine, undertone, filter, engineGain };
+  }
+
+  updateAudio() {
+    if (!this.audio) return;
+
+    const { context, engine, undertone, filter, engineGain } = this.audio;
+    const now = context.currentTime;
+    const speed = Math.abs(this.car.speed);
+    const throttle = this.hasInput('w', 'arrowup') ? 1 : 0;
+    const targetFrequency = 44 + speed * 1.9 + throttle * 32;
+    const targetGain = this.mode === 'drive' ? 0.008 + Math.min(speed / 130, 1) * 0.04 + throttle * 0.015 : 0.001;
+
+    engine.frequency.setTargetAtTime(targetFrequency, now, 0.08);
+    undertone.frequency.setTargetAtTime(targetFrequency * 0.5, now, 0.08);
+    filter.frequency.setTargetAtTime(420 + speed * 9, now, 0.12);
+    engineGain.gain.setTargetAtTime(targetGain, now, 0.12);
   }
 
   updateCar(dt) {
     const throttle = this.hasInput('w', 'arrowup') ? 1 : 0;
     const reverse = this.hasInput('s', 'arrowdown') ? 1 : 0;
     const brake = this.keys.has(' ') ? 1 : 0;
+    const boost = this.keys.has('shift') ? 1.35 : 1;
     const steerInput = (this.hasInput('a', 'arrowleft') ? 1 : 0) - (this.hasInput('d', 'arrowright') ? 1 : 0);
 
     const nearest = this.nearestRoad(this.car.position.x, this.car.position.z);
-    const speedLimit = ROAD_SPEED[nearest.road.type];
-    const offRoadPenalty = nearest.distance > ROAD_WIDTH[nearest.road.type] * 0.65 ? 0.55 : 1;
-    const acceleration = 36 * throttle - 28 * reverse - 55 * brake;
-    const drag = 4.2 + Math.abs(this.car.speed) * 0.028;
+    const roadEdge = ROAD_WIDTH[nearest.road.type] * 0.76;
+    const offRoadDistance = Math.max(0, nearest.distance - roadEdge);
+    const offRoadPenalty = clamp(1 - offRoadDistance / 95, 0.72, 1);
+    const speedLimit = Math.max(ROAD_SPEED[nearest.road.type] * 1.45, 92);
+    const acceleration = 72 * throttle * boost - 38 * reverse - 92 * brake;
+    const drag = 2.4 + Math.abs(this.car.speed) * 0.018;
 
     this.car.speed += acceleration * offRoadPenalty * dt;
     this.car.speed -= Math.sign(this.car.speed) * drag * dt;
     if (Math.abs(this.car.speed) < 0.35 && !throttle && !reverse) this.car.speed = 0;
-    this.car.speed = clamp(this.car.speed, -22, speedLimit * offRoadPenalty);
+    this.car.speed = clamp(this.car.speed, -34, speedLimit * offRoadPenalty * boost);
 
-    const targetSteering = steerInput * (0.9 - Math.min(Math.abs(this.car.speed) / 170, 0.42));
+    const targetSteering = steerInput * (1 - Math.min(Math.abs(this.car.speed) / 230, 0.46));
     this.car.steering += (targetSteering - this.car.steering) * Math.min(1, dt * 9);
 
-    const turnRate = this.car.steering * (0.8 + Math.min(Math.abs(this.car.speed) / 55, 1.3));
+    const turnRate = this.car.steering * (0.95 + Math.min(Math.abs(this.car.speed) / 85, 1.15));
     this.car.heading -= turnRate * Math.sign(this.car.speed || 1) * dt;
 
+    const previousPosition = this.car.position.clone();
     const metersPerSecond = this.car.speed / 3.6;
     this.car.position.x += Math.sin(this.car.heading) * metersPerSecond * dt;
     this.car.position.z -= Math.cos(this.car.heading) * metersPerSecond * dt;
 
-    const afterMove = this.nearestRoad(this.car.position.x, this.car.position.z);
-    const roadEdge = ROAD_WIDTH[afterMove.road.type] * 0.58;
-    this.car.onRoad = afterMove.distance <= roadEdge;
-    this.car.streetName = afterMove.road.name;
+    this.resolveCarCollisions(previousPosition);
+    this.resolveActorCollisions();
 
-    if (afterMove.distance > roadEdge) {
-      const snap = Math.min(0.18, (afterMove.distance - roadEdge) * 0.012);
-      this.car.position.x += (afterMove.point[0] - this.car.position.x) * snap;
-      this.car.position.z += (afterMove.point[1] - this.car.position.z) * snap;
-      this.car.speed *= 0.992;
-    }
+    const afterMove = this.nearestRoad(this.car.position.x, this.car.position.z);
+    this.car.onRoad = afterMove.distance <= ROAD_WIDTH[afterMove.road.type] * 0.85;
+    this.car.streetName = afterMove.road.name;
 
     this.syncCarMesh();
 
@@ -537,6 +1299,109 @@ class LisbonDriveDemo {
     if (this.lastMapSync > 0.35) {
       this.syncMapMarker(false);
       this.lastMapSync = 0;
+    }
+
+    this.updateWeather(dt);
+  }
+
+  resolveCarCollisions(previousPosition) {
+    let collided = false;
+
+    for (const collider of this.buildingColliders) {
+      const resolved = resolveCircleBox(
+        this.car.position.x,
+        this.car.position.z,
+        1.18,
+        collider
+      );
+
+      if (resolved) {
+        this.car.position.x = resolved.x;
+        this.car.position.z = resolved.z;
+        collided = true;
+      }
+    }
+
+    if (!collided) return;
+
+    const stillInside = this.buildingColliders.some((collider) => (
+      pointInRotatedBox(this.car.position.x, this.car.position.z, collider)
+    ));
+
+    if (stillInside) {
+      this.car.position.copy(previousPosition);
+    }
+
+    this.car.speed *= -0.18;
+    this.car.steering *= 0.35;
+  }
+
+  resolveActorCollisions() {
+    const colliders = [
+      ...this.staticColliders,
+      ...this.actors.map((actor) => ({
+        mesh: actor.mesh,
+        radius: actor.radius,
+        kind: actor.kind,
+        actor
+      }))
+    ];
+
+    for (const collider of colliders) {
+      const dx = this.car.position.x - collider.mesh.position.x;
+      const dz = this.car.position.z - collider.mesh.position.z;
+      const minDistance = 0.94 + collider.radius;
+      const distance = Math.hypot(dx, dz);
+
+      if (distance >= minDistance || distance < 0.001) continue;
+
+      const nx = dx / distance;
+      const nz = dz / distance;
+      const push = minDistance - distance;
+      this.car.position.x += nx * push;
+      this.car.position.z += nz * push;
+
+      if (collider.actor && collider.kind !== 'traffic') {
+        collider.actor.direction *= -1;
+        collider.actor.distance += collider.actor.direction * 3;
+      }
+
+      if (collider.actor && collider.kind === 'traffic') {
+        collider.actor.speed *= 0.65;
+      }
+
+      this.car.speed *= collider.kind === 'traffic' || collider.kind === 'parked' ? -0.32 : -0.12;
+      this.car.steering *= 0.5;
+    }
+  }
+
+  updateActors(dt) {
+    for (const actor of this.actors) {
+      this.updatePathActor(actor, dt);
+    }
+  }
+
+  updatePathActor(actor, dt) {
+    const routeLength = pathLength(actor.route);
+    actor.distance = wrap(actor.distance + actor.speed * actor.direction * dt, 0, routeLength);
+    const sample = pointAtPath(actor.route, actor.distance);
+    const side = new THREE.Vector2(Math.cos(sample.heading), Math.sin(sample.heading));
+
+    actor.mesh.position.set(
+      sample.x + side.x * actor.offset,
+      actor.kind === 'traffic' ? 0.08 : 0.12,
+      sample.z + side.y * actor.offset
+    );
+    actor.mesh.rotation.y = -sample.heading + (actor.direction < 0 ? Math.PI : 0);
+
+    if (actor.kind !== 'traffic') {
+      actor.bob += dt * actor.speed * 5;
+      actor.mesh.position.y += Math.sin(actor.bob) * 0.08;
+    } else {
+      const nearest = this.nearestRoad(actor.mesh.position.x, actor.mesh.position.z);
+      if (nearest.distance > ROAD_WIDTH[nearest.road.type] * 0.48) {
+        actor.direction *= -1;
+      }
     }
   }
 
@@ -563,12 +1428,12 @@ class LisbonDriveDemo {
     const forward = new THREE.Vector3(Math.sin(this.car.heading), 0, -Math.cos(this.car.heading));
     const desired = this.car.position
       .clone()
-      .addScaledVector(forward, -10.5)
-      .add(new THREE.Vector3(0, 5.9, 0));
+      .addScaledVector(forward, -5)
+      .add(new THREE.Vector3(0, 68, 0));
     const lookAt = this.car.position
       .clone()
-      .addScaledVector(forward, 7.5)
-      .add(new THREE.Vector3(0, 1.15, 0));
+      .addScaledVector(forward, 6)
+      .add(new THREE.Vector3(0, 0.7, 0));
 
     return { desired, lookAt };
   }
@@ -576,7 +1441,7 @@ class LisbonDriveDemo {
   updateHud() {
     document.querySelector('[data-hud="speed"]').textContent = Math.round(Math.abs(this.car.speed));
     document.querySelector('[data-hud="street"]').textContent = this.car.streetName;
-    document.querySelector('[data-hud="status"]').textContent = this.car.onRoad ? 'on road' : 'snapping to road';
+    document.querySelector('[data-hud="status"]').textContent = this.car.onRoad ? 'full throttle' : 'free roam';
   }
 
   syncMapMarker(animate) {
@@ -600,7 +1465,7 @@ class LisbonDriveDemo {
   nearestRoad(x, z) {
     let best = null;
 
-    for (const road of ROADS) {
+    for (const road of this.roads) {
       forEachSegment(road.points, (start, end) => {
         const hit = closestPointOnSegment([x, z], start, end);
         if (!best || hit.distance < best.distance) {
@@ -679,6 +1544,46 @@ function injectStyles() {
     .hero-panel h1 { font-size: clamp(2.4rem, 6vw, 5.5rem); }
     .drive-panel h2 { font-size: clamp(2rem, 5vw, 3.8rem); }
 
+    .drive-panel {
+      max-width: 238px;
+      padding: 12px 14px;
+      border-radius: 20px;
+      opacity: 0.74;
+    }
+
+    .drive-panel h2 {
+      font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+      letter-spacing: -0.04em;
+    }
+
+    .drive-panel p {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .drive-panel .secondary-action {
+      margin-top: 10px;
+      padding: 9px 13px;
+      font-size: 0.82rem;
+    }
+
+    .reality-chip {
+      display: inline-flex;
+      max-width: 100%;
+      margin-top: 9px !important;
+      border: 1px solid rgba(255, 209, 102, 0.22);
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: rgba(255, 226, 165, 0.86) !important;
+      background: rgba(255, 209, 102, 0.08);
+      font-size: 0.64rem !important;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      line-height: 1.2 !important;
+      text-transform: uppercase;
+    }
+
     .panel p {
       color: rgba(249, 241, 223, 0.78);
       line-height: 1.55;
@@ -715,7 +1620,7 @@ function injectStyles() {
     .hud {
       position: absolute;
       left: 50%;
-      bottom: 28px;
+      bottom: 22px;
       display: grid;
       grid-template-columns: auto minmax(180px, 1fr) auto;
       gap: 10px;
@@ -725,12 +1630,12 @@ function injectStyles() {
     }
 
     .speed, .street, .status {
-      min-height: 70px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 22px;
-      background: rgba(12, 15, 18, 0.78);
+      min-height: 62px;
+      border: 1px solid rgba(255, 241, 207, 0.22);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(20, 22, 24, 0.74), rgba(8, 10, 12, 0.84));
       backdrop-filter: blur(16px);
-      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .speed {
@@ -800,6 +1705,258 @@ function worldToLngLat(x, z) {
   return [LISBON_CENTER[0] + x * DEG_PER_METER_LNG, LISBON_CENTER[1] - z * DEG_PER_METER_LAT];
 }
 
+function lngLatToWorld(lng, lat) {
+  return [(lng - LISBON_CENTER[0]) / DEG_PER_METER_LNG, -(lat - LISBON_CENTER[1]) / DEG_PER_METER_LAT];
+}
+
+function createTerrainMaterial() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext('2d');
+
+  context.fillStyle = '#e7d8ad';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < canvas.height; y += 16) {
+    for (let x = 0; x < canvas.width; x += 16) {
+      const shade = 214 + Math.floor(pseudoRandom(x * 9.7 + y * 13.1) * 18);
+      context.fillStyle = `rgba(${shade}, ${shade - 11}, ${shade - 48}, 0.18)`;
+      context.fillRect(x, y, 15, 15);
+    }
+  }
+
+  context.strokeStyle = 'rgba(113, 105, 82, 0.12)';
+  context.lineWidth = 1;
+  for (let i = -canvas.width; i < canvas.width * 2; i += 22) {
+    context.beginPath();
+    context.moveTo(i, 0);
+    context.lineTo(i + canvas.width, canvas.height);
+    context.stroke();
+  }
+
+  for (let i = 0; i < 900; i += 1) {
+    const x = pseudoRandom(i * 17.3) * canvas.width;
+    const y = pseudoRandom(i * 29.9) * canvas.height;
+    context.fillStyle = i % 2 === 0 ? 'rgba(255,255,240,0.18)' : 'rgba(118,104,76,0.1)';
+    context.fillRect(x, y, 1.2, 1.2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(18, 18);
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  return new THREE.MeshStandardMaterial({
+    map: texture,
+    color: 0xf0dfb7,
+    roughness: 0.98
+  });
+}
+
+function simplifyFootprint(points) {
+  if (points.length <= 12) return points;
+  const step = Math.ceil(points.length / 12);
+  const simplified = points.filter((_point, index) => index % step === 0);
+  return simplified.length >= 4 ? simplified : points.slice(0, 12);
+}
+
+function footprintBounds(points) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+
+  for (const [x, z] of points) {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+
+  return {
+    centerX: (minX + maxX) / 2,
+    centerZ: (minZ + maxZ) / 2,
+    width: maxX - minX,
+    depth: maxZ - minZ
+  };
+}
+
+function createFootprintExtrusion(points, height) {
+  const unique = removeDuplicateClosingPoint(points);
+  const shape = new THREE.Shape();
+
+  unique.forEach(([x, z], index) => {
+    if (index === 0) {
+      shape.moveTo(x, -z);
+    } else {
+      shape.lineTo(x, -z);
+    }
+  });
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: height,
+    bevelEnabled: true,
+    bevelThickness: 0.08,
+    bevelSize: 0.08,
+    bevelSegments: 1
+  });
+  geometry.rotateX(-Math.PI / 2);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function removeDuplicateClosingPoint(points) {
+  if (points.length < 2) return points;
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (Math.hypot(first[0] - last[0], first[1] - last[1]) < 0.1) {
+    return points.slice(0, -1);
+  }
+  return points;
+}
+
+function mergeJunctions(junctions) {
+  const buckets = new Map();
+
+  for (const junction of junctions) {
+    const key = `${Math.round(junction.point[0] / 8)}:${Math.round(junction.point[1] / 8)}`;
+    const bucket = buckets.get(key) || { x: 0, z: 0, width: 0, count: 0 };
+    bucket.x += junction.point[0];
+    bucket.z += junction.point[1];
+    bucket.width = Math.max(bucket.width, junction.width);
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+
+  return [...buckets.values()]
+    .map((bucket) => ({
+      x: bucket.x / bucket.count,
+      z: bucket.z / bucket.count,
+      radius: Math.max(5.5, bucket.width * 0.72 + Math.min(bucket.count, 5) * 0.7)
+    }));
+}
+
+function selectPlayableRoads(roads) {
+  const usefulHighways = new Set([
+    'primary',
+    'secondary',
+    'tertiary',
+    'unclassified',
+    'residential',
+    'living_street',
+    'service'
+  ]);
+
+  return roads
+    .map((road) => ({
+      ...road,
+      points: road.points.filter(([x, z]) => isInsidePlayableBounds(x, z))
+    }))
+    .filter((road) => road.points.length >= 2 && usefulHighways.has(road.highway))
+    .filter((road) => pathLength(road.points) > 16)
+    .sort((a, b) => roadPriority(b) - roadPriority(a))
+    .slice(0, 130);
+}
+
+function selectPlayableBuildings(buildings, roads) {
+  const selected = [];
+  const occupied = new Set();
+
+  for (const building of buildings) {
+    const points = simplifyFootprint(building.points).filter(([x, z]) => isInsidePlayableBounds(x, z));
+    if (points.length < 4) continue;
+
+    const bounds = footprintBounds(points);
+    if (!isInsidePlayableBounds(bounds.centerX, bounds.centerZ)) continue;
+    if (bounds.centerZ > RIVER_START_Z - 14) continue;
+    if (bounds.width < 4 || bounds.depth < 4 || bounds.width > 62 || bounds.depth > 62) continue;
+
+    const nearest = nearestRoadFromRoads(bounds.centerX, bounds.centerZ, roads);
+    if (!nearest) continue;
+
+    const roadWidth = ROAD_WIDTH[nearest.road.type] || ROAD_WIDTH.lane;
+    const clearance = Math.max(bounds.width, bounds.depth) * 0.28 + roadWidth * 0.85;
+    if (nearest.distance < clearance || nearest.distance > 56) continue;
+
+    const key = `${Math.round(bounds.centerX / 5)}:${Math.round(bounds.centerZ / 5)}`;
+    if (occupied.has(key)) continue;
+    occupied.add(key);
+
+    selected.push({
+      ...building,
+      points,
+      height: building.height
+    });
+  }
+
+  return selected
+    .sort((a, b) => a.height - b.height)
+    .slice(0, 300);
+}
+
+function addRealityWindows(group, bounds, height, rotation, material) {
+  const columns = Math.max(1, Math.min(4, Math.floor(bounds.width / 5.2)));
+  const floors = Math.max(1, Math.min(5, Math.floor(height / 4.4)));
+  const facadeZ = -bounds.depth / 2 - 0.11;
+
+  for (let floor = 0; floor < floors; floor += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const window = new THREE.Mesh(new RoundedBoxGeometry(0.85, 1.05, 0.08, 1, 0.05), material);
+      window.position.set(bounds.centerX, 2.4 + floor * 3.7, bounds.centerZ);
+      window.rotation.y = rotation;
+      window.translateX((column - (columns - 1) / 2) * (bounds.width / (columns + 0.6)));
+      window.translateZ(facadeZ);
+      group.add(window);
+    }
+  }
+}
+
+function dominantFootprintRotation(points) {
+  let bestLength = 0;
+  let rotation = 0;
+
+  forEachSegment(points, (start, end, length) => {
+    if (length > bestLength) {
+      bestLength = length;
+      rotation = segmentHeading(start, end) * -1;
+    }
+  });
+
+  return rotation;
+}
+
+function nearestRoadFromRoads(x, z, roads) {
+  let best = null;
+
+  for (const road of roads) {
+    forEachSegment(road.points, (start, end) => {
+      const hit = closestPointOnSegment([x, z], start, end);
+      if (!best || hit.distance < best.distance) {
+        best = { ...hit, road, heading: segmentHeading(start, end) };
+      }
+    });
+  }
+
+  return best;
+}
+
+function roadPriority(road) {
+  const typeScore = { arterial: 4, street: 3, lane: 1 };
+  return (typeScore[road.type] || 1) * 1000 + Math.min(pathLength(road.points), 900);
+}
+
+function isInsidePlayableBounds(x, z) {
+  return (
+    x >= PLAYABLE_BOUNDS.minX &&
+    x <= PLAYABLE_BOUNDS.maxX &&
+    z >= PLAYABLE_BOUNDS.minZ &&
+    z <= PLAYABLE_BOUNDS.maxZ
+  );
+}
+
 function forEachSegment(points, callback) {
   for (let i = 0; i < points.length - 1; i += 1) {
     const start = points[i];
@@ -833,13 +1990,113 @@ function closestPointOnSegment(point, start, end) {
   };
 }
 
+function pathLength(points) {
+  let length = 0;
+  forEachSegment(points, (_start, _end, segmentLength) => {
+    length += segmentLength;
+  });
+  return length;
+}
+
+function pointAtPath(points, distance) {
+  let remaining = distance;
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const start = points[i];
+    const end = points[i + 1];
+    const dx = end[0] - start[0];
+    const dz = end[1] - start[1];
+    const length = Math.hypot(dx, dz);
+
+    if (remaining <= length || i === points.length - 2) {
+      const t = length === 0 ? 0 : remaining / length;
+      return {
+        x: start[0] + dx * t,
+        z: start[1] + dz * t,
+        heading: segmentHeading(start, end)
+      };
+    }
+
+    remaining -= length;
+  }
+
+  return {
+    x: points[0][0],
+    z: points[0][1],
+    heading: 0
+  };
+}
+
+function resolveCircleBox(x, z, radius, box) {
+  const local = worldToBoxLocal(x, z, box);
+  const closestX = clamp(local.x, -box.halfWidth, box.halfWidth);
+  const closestZ = clamp(local.z, -box.halfDepth, box.halfDepth);
+  const dx = local.x - closestX;
+  const dz = local.z - closestZ;
+  const distanceSq = dx ** 2 + dz ** 2;
+
+  if (distanceSq > radius ** 2) return null;
+
+  if (distanceSq > 0.0001) {
+    const distance = Math.sqrt(distanceSq);
+    local.x += (dx / distance) * (radius - distance);
+    local.z += (dz / distance) * (radius - distance);
+  } else {
+    const pushX = box.halfWidth - Math.abs(local.x);
+    const pushZ = box.halfDepth - Math.abs(local.z);
+    if (pushX < pushZ) {
+      local.x = Math.sign(local.x || 1) * (box.halfWidth + radius);
+    } else {
+      local.z = Math.sign(local.z || 1) * (box.halfDepth + radius);
+    }
+  }
+
+  return boxLocalToWorld(local.x, local.z, box);
+}
+
+function pointInRotatedBox(x, z, box) {
+  const local = worldToBoxLocal(x, z, box);
+  return Math.abs(local.x) < box.halfWidth && Math.abs(local.z) < box.halfDepth;
+}
+
+function worldToBoxLocal(x, z, box) {
+  const dx = x - box.x;
+  const dz = z - box.z;
+  const cos = Math.cos(box.rotation);
+  const sin = Math.sin(box.rotation);
+
+  return {
+    x: cos * dx - sin * dz,
+    z: sin * dx + cos * dz
+  };
+}
+
+function boxLocalToWorld(x, z, box) {
+  const cos = Math.cos(box.rotation);
+  const sin = Math.sin(box.rotation);
+
+  return {
+    x: box.x + cos * x + sin * z,
+    z: box.z - sin * x + cos * z
+  };
+}
+
 function normalize(vector) {
   const length = Math.hypot(vector[0], vector[1]) || 1;
   return [vector[0] / length, vector[1] / length];
 }
 
+function pseudoRandom(seed) {
+  return Math.abs(Math.sin(seed * 12.9898) * 43758.5453) % 1;
+}
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function wrap(value, min, max) {
+  const range = max - min;
+  return ((((value - min) % range) + range) % range) + min;
 }
 
 new LisbonDriveDemo(document.getElementById('app')).start();
