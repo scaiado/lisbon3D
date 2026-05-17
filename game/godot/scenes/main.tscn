@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.56, 0.72, 0.82, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.75, 0.86, 0.88, 1)
+ambient_light_energy = 0.85
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.819152, -0.296198, 0.492404, 0, 0.857167, 0.515038, -0.573576, -0.421011, 0.702634, 0, 90, 0)
+light_energy = 2.7
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")

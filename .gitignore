@@ -22,3 +22,9 @@ npm-debug.log*
 
 # Vercel
 .vercel
+
+# Godot native prototype
+game/godot/.godot/
+game/godot/export_presets.cfg
+game/godot/builds/
+game/godot/data/lisbon_slice.json

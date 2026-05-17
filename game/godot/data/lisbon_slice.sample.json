@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "generatedAt": "sample",
+  "playableBounds": {
+    "minX": -520,
+    "maxX": 520,
+    "minZ": -380,
+    "maxZ": 535
+  },
+  "metadata": {
+    "source": "sample",
+    "roadCount": 3,
+    "buildingCount": 5
+  },
+  "roads": [
+    {
+      "id": "sample-avenue",
+      "name": "Prototype Avenida",
+      "type": "street",
+      "highway": "residential",
+      "width": 12,
+      "points": [[-230, 285], [-180, 180], [-120, 60], [-50, -80], [35, -235]]
+    },
+    {
+      "id": "sample-cross",
+      "name": "Rua Toy",
+      "type": "street",
+      "highway": "residential",
+      "width": 10,
+      "points": [[-270, 35], [-130, 50], [20, 45], [180, 75], [300, 110]]
+    },
+    {
+      "id": "sample-lane",
+      "name": "Travessa Verde",
+      "type": "lane",
+      "highway": "service",
+      "width": 7,
+      "points": [[65, 300], [85, 205], [135, 110], [230, 45]]
+    }
+  ],
+  "buildings": [
+    { "id": "b1", "height": 16, "type": "apartments", "points": [[-210, 120], [-155, 118], [-150, 160], [-215, 165], [-210, 120]] },
+    { "id": "b2", "height": 22, "type": "apartments", "points": [[-95, 120], [-35, 125], [-35, 175], [-105, 170], [-95, 120]] },
+    { "id": "b3", "height": 12, "type": "retail", "points": [[70, 95], [135, 105], [128, 155], [62, 145], [70, 95]] },
+    { "id": "b4", "height": 28, "type": "apartments", "points": [[-155, -30], [-90, -25], [-88, 25], [-160, 20], [-155, -30]] },
+    { "id": "b5", "height": 18, "type": "apartments", "points": [[80, -50], [145, -35], [135, 25], [72, 18], [80, -50]] }
+  ],
+  "green": [
+    { "id": "g1", "points": [[-300, 205], [-245, 205], [-240, 270], [-310, 275], [-300, 205]] },
+    { "id": "g2", "points": [[160, 170], [255, 170], [245, 245], [150, 235], [160, 170]] }
+  ],
+  "water": []
+}
