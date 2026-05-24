@@ -44,6 +44,7 @@ func _ready() -> void:
 	ambient_life.name = "AmbientLife"
 	add_child(ambient_life)
 	ambient_life.configure(world.get_road_segments())
+	vehicle.dynamic_collision_provider = ambient_life
 
 	audio_controller = AudioController.new()
 	audio_controller.name = "AudioController"

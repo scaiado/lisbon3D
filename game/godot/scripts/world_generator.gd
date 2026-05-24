@@ -17,6 +17,9 @@ var paving_material := _make_material(Color(0.74, 0.67, 0.43, 0.42), 0.98)
 var roof_material := _make_material(Color(0.74, 0.28, 0.16), 0.78)
 var junction_material := _make_material(Color(0.028, 0.045, 0.042), 0.9)
 var lane_material := _make_material(Color(0.82, 0.72, 0.34), 0.66)
+var crosswalk_material := _make_material(Color(0.94, 0.93, 0.85), 0.72)
+var window_material := _make_material(Color(0.05, 0.22, 0.28), 0.45)
+var awning_material := _make_material(Color(0.9, 0.16, 0.12), 0.62)
 var bench_material := _make_material(Color(0.58, 0.27, 0.11), 0.82)
 var lamp_material := _make_material(Color(0.08, 0.08, 0.07), 0.7)
 var building_materials := [
@@ -143,9 +146,14 @@ func _add_road_segment(start: Vector3, end: Vector3, width: float, road: Diction
 	_add_box("Road", center + Vector3(0, ROAD_HEIGHT, 0), Vector3(width, 0.08, length), heading, asphalt_material)
 	_add_box("SidewalkL", center, Vector3(sidewalk_width, 0.06, length), heading, sidewalk_material, -width * 0.5 - sidewalk_width * 0.5 - 0.25)
 	_add_box("SidewalkR", center, Vector3(sidewalk_width, 0.06, length), heading, sidewalk_material, width * 0.5 + sidewalk_width * 0.5 + 0.25)
+	_add_box("CurbL", center + Vector3(0, 0.06, 0), Vector3(0.36, 0.14, length), heading, crosswalk_material, -width * 0.5 - 0.18)
+	_add_box("CurbR", center + Vector3(0, 0.06, 0), Vector3(0.36, 0.14, length), heading, crosswalk_material, width * 0.5 + 0.18)
 
 	if road.get("type", "street") != "lane":
-		_add_box("CenterLine", center + Vector3(0, 0.1, 0), Vector3(0.25, 0.035, length * 0.72), heading, lane_material)
+		_add_dashed_line(start, end, heading, length)
+		if length > 55.0:
+			_add_crosswalk(start.lerp(end, 0.12), heading, width)
+			_add_crosswalk(start.lerp(end, 0.88), heading, width)
 
 	road_segments.append({
 		"start": start,
@@ -166,6 +174,7 @@ func _add_buildings(buildings: Array) -> void:
 		var material: Material = building_materials[index % building_materials.size()]
 		_add_box("Building", bounds.center + Vector3(0, height * 0.5, 0), footprint, 0.0, material)
 		_add_box("Roof", bounds.center + Vector3(0, height + 0.16, 0), Vector3(footprint.x * 1.03, 0.32, footprint.z * 1.03), 0.0, roof_material)
+		_add_building_details(bounds.center, footprint, height, index)
 		_add_collision_zone("box", bounds.center, Vector2(footprint.x * 0.5 + 2.2, footprint.z * 0.5 + 2.2))
 		index += 1
 
@@ -245,6 +254,37 @@ func _add_bench(position: Vector3, heading: float, scale := 1.0) -> void:
 
 func _add_toy_landmarks() -> void:
 	_add_box("ToyMonument", Vector3(-75, 8, 285), Vector3(5, 16, 5), 0.0, _make_material(Color(0.9, 0.67, 0.29), 0.7))
+
+func _add_dashed_line(start: Vector3, end: Vector3, heading: float, length: float) -> void:
+	var dash_length := 5.2
+	var gap := 5.8
+	var cursor := 5.0
+	while cursor < length - 4.0:
+		var t := cursor / length
+		var dash_center := start.lerp(end, t)
+		_add_box("LaneDash", dash_center + Vector3(0, 0.105, 0), Vector3(0.26, 0.035, dash_length), heading, lane_material)
+		cursor += dash_length + gap
+
+func _add_crosswalk(center: Vector3, heading: float, road_width: float) -> void:
+	for i in range(-3, 4):
+		_add_box("CrosswalkStripe", center + Vector3(0, 0.115, 0), Vector3(0.72, 0.035, road_width * 0.82), heading + PI * 0.5, crosswalk_material, float(i) * 1.1)
+
+func _add_building_details(center: Vector3, footprint: Vector3, height: float, index: int) -> void:
+	var rows: int = max(1, int(height / 4.2))
+	var cols_x: int = clamp(int(footprint.x / 5.5), 1, 5)
+	var cols_z: int = clamp(int(footprint.z / 5.5), 1, 5)
+	for row in range(rows):
+		var y: float = 2.5 + float(row) * 3.6
+		for col in range(cols_x):
+			var x: float = -footprint.x * 0.38 + float(col) * (footprint.x * 0.76 / max(cols_x - 1, 1))
+			_add_box("WindowFront", center + Vector3(x, y, -footprint.z * 0.505), Vector3(1.05, 1.3, 0.12), 0.0, window_material)
+			_add_box("WindowBack", center + Vector3(x, y, footprint.z * 0.505), Vector3(1.05, 1.3, 0.12), 0.0, window_material)
+		for col in range(cols_z):
+			var z: float = -footprint.z * 0.38 + float(col) * (footprint.z * 0.76 / max(cols_z - 1, 1))
+			_add_box("WindowSideL", center + Vector3(-footprint.x * 0.505, y, z), Vector3(0.12, 1.3, 1.05), 0.0, window_material)
+			_add_box("WindowSideR", center + Vector3(footprint.x * 0.505, y, z), Vector3(0.12, 1.3, 1.05), 0.0, window_material)
+	if index % 3 == 0:
+		_add_box("Awning", center + Vector3(0, 2.1, -footprint.z * 0.58), Vector3(min(footprint.x * 0.62, 12.0), 0.3, 1.0), 0.0, awning_material)
 
 func _compute_spawn(slice: Dictionary) -> void:
 	var spawn: Dictionary = slice.get("spawn", {})

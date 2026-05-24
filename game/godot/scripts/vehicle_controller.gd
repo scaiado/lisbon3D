@@ -14,6 +14,7 @@ const COLLISION_RADIUS := 2.2
 var speed := 0.0
 var steering := 0.0
 var impact_flash := 0.0
+var dynamic_collision_provider: Node
 var road_segments: Array[Dictionary] = []
 var collision_zones: Array[Dictionary] = []
 
@@ -73,6 +74,10 @@ func _first_collision(point: Vector3) -> Dictionary:
 	for zone in collision_zones:
 		if _collides_with_zone(point, zone):
 			return zone
+	if dynamic_collision_provider and dynamic_collision_provider.has_method("get_collision_zones"):
+		for zone in dynamic_collision_provider.get_collision_zones():
+			if _collides_with_zone(point, zone):
+				return zone
 	return {}
 
 func _collides_with_zone(point: Vector3, zone: Dictionary) -> bool:
