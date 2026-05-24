@@ -28,7 +28,7 @@ func _ready() -> void:
 	vehicle.name = "PlayerCar"
 	vehicle.position = world.get_spawn_position()
 	vehicle.rotation.y = world.get_spawn_heading()
-	vehicle.configure(world.get_road_segments())
+	vehicle.configure(world.get_road_segments(), world.get_collision_zones())
 	add_child(vehicle)
 
 	camera_rig = CameraRig.new()

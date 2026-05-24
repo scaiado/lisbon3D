@@ -8,10 +8,12 @@ const DRAG := 3.2
 const STEER_RATE := 2.2
 const CAR_WIDTH := 3.2
 const CAR_LENGTH := 5.4
+const COLLISION_RADIUS := 2.2
 
 var speed := 0.0
 var steering := 0.0
 var road_segments: Array[Dictionary] = []
+var collision_zones: Array[Dictionary] = []
 
 var body_material := _make_material(Color(0.95, 0.22, 0.14), 0.45)
 var hood_material := _make_material(Color(1.0, 0.3, 0.22), 0.42)
@@ -22,8 +24,9 @@ var light_material := _make_material(Color(1.0, 0.9, 0.46), 0.2)
 func _ready() -> void:
 	_build_car_mesh()
 
-func configure(segments: Array[Dictionary]) -> void:
+func configure(segments: Array[Dictionary], zones: Array[Dictionary]) -> void:
 	road_segments = segments
+	collision_zones = zones
 
 func reset_motion() -> void:
 	speed = 0.0
@@ -41,12 +44,37 @@ func _physics_process(delta: float) -> void:
 	speed = clamp(speed, -12.0, MAX_SPEED * boost)
 
 	steering = lerp(steering, steer_input, min(delta * 8.0, 1.0))
-	rotation.y += steering * STEER_RATE * delta * clamp(abs(speed) / 18.0, 0.25, 1.0)
+	rotation.y -= steering * STEER_RATE * delta * clamp(abs(speed) / 18.0, 0.25, 1.0)
 
-	global_position += _forward() * speed * delta
+	var previous_position := global_position
+	var next_position := global_position + _forward() * speed * delta
+	var collision := _first_collision(next_position)
+	if collision.is_empty():
+		global_position = next_position
+	else:
+		global_position = previous_position
+		speed *= -0.18
 
 func _forward() -> Vector3:
 	return (-global_transform.basis.z).normalized()
+
+func _first_collision(point: Vector3) -> Dictionary:
+	for zone in collision_zones:
+		if _collides_with_zone(point, zone):
+			return zone
+	return {}
+
+func _collides_with_zone(point: Vector3, zone: Dictionary) -> bool:
+	var center: Vector3 = zone.get("center", Vector3.ZERO)
+	if zone.get("kind", "circle") == "box":
+		var half_extents: Vector2 = zone.get("size", Vector2.ZERO)
+		var dx: float = abs(point.x - center.x)
+		var dz: float = abs(point.z - center.z)
+		return dx < half_extents.x + COLLISION_RADIUS and dz < half_extents.y + COLLISION_RADIUS
+
+	var radius: float = float(zone.get("size", Vector2(COLLISION_RADIUS, 0.0)).x)
+	var flat_distance := Vector2(point.x - center.x, point.z - center.z).length()
+	return flat_distance < radius + COLLISION_RADIUS
 
 func _nearest_road(point: Vector3) -> Dictionary:
 	var best := {}

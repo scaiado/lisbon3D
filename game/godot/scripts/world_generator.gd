@@ -6,6 +6,7 @@ const MIN_DRIVABLE_ROAD_WIDTH := 14.0
 const WORLD_SCALE := 1.0
 
 var road_segments: Array[Dictionary] = []
+var collision_zones: Array[Dictionary] = []
 var spawn_position := Vector3.ZERO
 var spawn_heading := 0.0
 
@@ -56,6 +57,9 @@ func get_spawn_heading() -> float:
 
 func get_road_segments() -> Array[Dictionary]:
 	return road_segments
+
+func get_collision_zones() -> Array[Dictionary]:
+	return collision_zones
 
 func _add_ground(slice: Dictionary) -> void:
 	var bounds: Dictionary = slice.get("playableBounds", {
@@ -162,6 +166,7 @@ func _add_buildings(buildings: Array) -> void:
 		var material: Material = building_materials[index % building_materials.size()]
 		_add_box("Building", bounds.center + Vector3(0, height * 0.5, 0), footprint, 0.0, material)
 		_add_box("Roof", bounds.center + Vector3(0, height + 0.16, 0), Vector3(footprint.x * 1.03, 0.32, footprint.z * 1.03), 0.0, roof_material)
+		_add_collision_zone("box", bounds.center, Vector2(footprint.x * 0.5 + 2.2, footprint.z * 0.5 + 2.2))
 		index += 1
 
 func _add_greenery(green_features: Array, roads: Array, add_roadside_trees := true) -> void:
@@ -211,6 +216,7 @@ func _add_compiled_props(props: Array) -> void:
 
 func _add_tree(position: Vector3, scale := 1.0, variant := "jacaranda") -> void:
 	_add_box("TreeTrunk", position + Vector3(0, 1.15 * scale, 0), Vector3(0.32, 2.3, 0.32) * scale, 0.0, trunk_material)
+	_add_collision_zone("circle", position, Vector2(1.25 * scale, 0.0))
 	var canopy := MeshInstance3D.new()
 	canopy.name = "TreeCanopy"
 	canopy.mesh = SphereMesh.new()
@@ -230,10 +236,12 @@ func _add_bush(position: Vector3, scale := 1.0, variant := "olive") -> void:
 	bush.scale = Vector3(1.25, 0.72, 1.0)
 	bush.material_override = leaf_materials[(_variant_index(variant) + 1) % leaf_materials.size()]
 	add_child(bush)
+	_add_collision_zone("circle", position, Vector2(1.05 * scale, 0.0))
 
 func _add_bench(position: Vector3, heading: float, scale := 1.0) -> void:
 	_add_box("BenchSeat", position + Vector3(0, 0.46 * scale, 0), Vector3(2.4, 0.22, 0.55) * scale, heading, bench_material)
 	_add_box("BenchBack", position + Vector3(0, 0.83 * scale, -0.26 * scale), Vector3(2.4, 0.55, 0.18) * scale, heading, bench_material)
+	_add_collision_zone("circle", position, Vector2(1.35 * scale, 0.0))
 
 func _add_toy_landmarks() -> void:
 	_add_box("ToyMonument", Vector3(-75, 8, 285), Vector3(5, 16, 5), 0.0, _make_material(Color(0.9, 0.67, 0.29), 0.7))
@@ -331,8 +339,17 @@ func _fallback_roads() -> Array:
 	]
 
 func _clear_children() -> void:
+	road_segments.clear()
+	collision_zones.clear()
 	for child in get_children():
 		child.queue_free()
+
+func _add_collision_zone(kind: String, center: Vector3, size: Vector2) -> void:
+	collision_zones.append({
+		"kind": kind,
+		"center": center,
+		"size": size
+	})
 
 static func _make_material(color: Color, roughness: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
