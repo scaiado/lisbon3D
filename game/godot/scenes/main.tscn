@@ -1,6 +1,27 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[sub_resource type="StandardMaterial3D" id="Material_preview_road"]
+albedo_color = Color(0.03, 0.05, 0.045, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_preview_ground"]
+albedo_color = Color(0.82, 0.74, 0.48, 1)
+roughness = 0.98
+
+[sub_resource type="StandardMaterial3D" id="Material_preview_car"]
+albedo_color = Color(0.95, 0.22, 0.14, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_preview_ground"]
+size = Vector3(18, 0.08, 14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_preview_road"]
+size = Vector3(5, 0.12, 14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_preview_car"]
+size = Vector3(1.4, 0.55, 2.4)
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -19,3 +40,19 @@ shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
+
+[node name="EditorPreview" type="Node3D" parent="."]
+
+[node name="PreviewGround" type="MeshInstance3D" parent="EditorPreview"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
+mesh = SubResource("BoxMesh_preview_ground")
+material_override = SubResource("Material_preview_ground")
+
+[node name="PreviewRoad" type="MeshInstance3D" parent="EditorPreview"]
+mesh = SubResource("BoxMesh_preview_road")
+material_override = SubResource("Material_preview_road")
+
+[node name="PreviewCar" type="MeshInstance3D" parent="EditorPreview"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 2)
+mesh = SubResource("BoxMesh_preview_car")
+material_override = SubResource("Material_preview_car")

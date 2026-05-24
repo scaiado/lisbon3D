@@ -14,6 +14,10 @@ var camera_rig: Node3D
 var audio_controller: Node
 
 func _ready() -> void:
+	var editor_preview := get_node_or_null("EditorPreview")
+	if editor_preview:
+		editor_preview.queue_free()
+
 	var slice := _load_slice()
 	world = WorldGenerator.new()
 	world.name = "GeneratedLisbonWorld"

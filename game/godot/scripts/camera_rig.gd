@@ -14,6 +14,7 @@ func _ready() -> void:
 	camera.fov = 47.0
 	camera.near = 0.05
 	camera.far = 1600.0
+	camera.current = true
 	add_child(camera)
 
 func _process(delta: float) -> void:
