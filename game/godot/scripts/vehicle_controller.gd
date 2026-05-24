@@ -7,6 +7,8 @@ const BRAKE_FORCE := 48.0
 const DRAG := 3.2
 const STEER_RATE := 2.2
 const ROAD_ALIGN_RATE := 3.8
+const CAR_WIDTH := 3.2
+const CAR_LENGTH := 5.4
 
 var speed := 0.0
 var steering := 0.0
@@ -84,14 +86,15 @@ func _closest_point_on_segment(point: Vector3, start: Vector3, end: Vector3) -> 
 	return start + segment * t
 
 func _build_car_mesh() -> void:
-	_add_box("Body", Vector3(0, 0.45, 0), Vector3(1.65, 0.55, 2.85), body_material)
-	_add_box("FrontHood", Vector3(0, 0.75, -0.82), Vector3(1.28, 0.2, 0.88), hood_material)
-	_add_box("Cabin", Vector3(0, 0.95, 0.12), Vector3(1.05, 0.55, 0.96), glass_material)
-	_add_box("LeftHeadlight", Vector3(-0.44, 0.62, -1.48), Vector3(0.3, 0.12, 0.08), light_material)
-	_add_box("RightHeadlight", Vector3(0.44, 0.62, -1.48), Vector3(0.3, 0.12, 0.08), light_material)
-	for x in [-0.9, 0.9]:
-		for z in [-1.0, 1.0]:
-			_add_box("Wheel", Vector3(x, 0.24, z), Vector3(0.28, 0.42, 0.42), wheel_material)
+	_add_box("Body", Vector3(0, 0.55, 0), Vector3(CAR_WIDTH, 0.72, CAR_LENGTH), body_material)
+	_add_box("FrontHood", Vector3(0, 0.96, -1.18), Vector3(CAR_WIDTH * 0.78, 0.24, 1.42), hood_material)
+	_add_box("Cabin", Vector3(0, 1.18, 0.58), Vector3(CAR_WIDTH * 0.64, 0.72, 1.65), glass_material)
+	_add_box("LeftHeadlight", Vector3(-0.72, 0.82, -2.78), Vector3(0.48, 0.16, 0.1), light_material)
+	_add_box("RightHeadlight", Vector3(0.72, 0.82, -2.78), Vector3(0.48, 0.16, 0.1), light_material)
+	_add_box("FrontNose", Vector3(0, 1.08, -2.86), Vector3(0.5, 0.1, 0.16), light_material)
+	for x in [-1.75, 1.75]:
+		for z in [-1.8, 1.8]:
+			_add_box("Wheel", Vector3(x, 0.32, z), Vector3(0.42, 0.7, 0.7), wheel_material)
 
 func _add_box(name: String, position: Vector3, size: Vector3, material: Material) -> void:
 	var node := MeshInstance3D.new()

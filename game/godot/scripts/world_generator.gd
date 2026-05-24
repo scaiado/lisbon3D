@@ -2,6 +2,7 @@ extends Node3D
 
 const ROAD_HEIGHT := 0.04
 const DEFAULT_ROAD_WIDTH := 9.0
+const MIN_DRIVABLE_ROAD_WIDTH := 14.0
 const WORLD_SCALE := 1.0
 
 var road_segments: Array[Dictionary] = []
@@ -99,10 +100,11 @@ func _add_compiled_roads(compiled_segments: Array, junctions: Array) -> void:
 		var end := _point_to_vector(segment.get("end", []))
 		if start == end:
 			continue
+		var compiled_width: float = max(float(segment.get("width", DEFAULT_ROAD_WIDTH)), MIN_DRIVABLE_ROAD_WIDTH)
 		var road := {
 			"name": segment.get("name", "Lisbon street"),
 			"type": segment.get("type", "street"),
-			"width": float(segment.get("width", DEFAULT_ROAD_WIDTH))
+			"width": compiled_width
 		}
 		_add_road_segment(start, end, road.width, road)
 
@@ -155,10 +157,11 @@ func _add_buildings(buildings: Array) -> void:
 		if points.size() < 3:
 			continue
 		var bounds := _bounds(points)
-		var height: float = clamp(float(building.get("height", 12.0)) * 0.85, 4.0, 38.0)
+		var height: float = clamp(float(building.get("height", 12.0)) * 0.52, 3.5, 19.0)
+		var footprint := Vector3(min(bounds.size.x, 36.0), height, min(bounds.size.z, 36.0))
 		var material: Material = building_materials[index % building_materials.size()]
-		_add_box("Building", bounds.center + Vector3(0, height * 0.5, 0), Vector3(bounds.size.x, height, bounds.size.z), 0.0, material)
-		_add_box("Roof", bounds.center + Vector3(0, height + 0.16, 0), Vector3(bounds.size.x * 1.03, 0.32, bounds.size.z * 1.03), 0.0, roof_material)
+		_add_box("Building", bounds.center + Vector3(0, height * 0.5, 0), footprint, 0.0, material)
+		_add_box("Roof", bounds.center + Vector3(0, height + 0.16, 0), Vector3(footprint.x * 1.03, 0.32, footprint.z * 1.03), 0.0, roof_material)
 		index += 1
 
 func _add_greenery(green_features: Array, roads: Array, add_roadside_trees := true) -> void:
@@ -238,8 +241,9 @@ func _add_toy_landmarks() -> void:
 func _compute_spawn(slice: Dictionary) -> void:
 	var spawn: Dictionary = slice.get("spawn", {})
 	if spawn.has("position"):
-		spawn_position = _point_to_vector(spawn.position) + Vector3(0, 0.32, 0)
-		spawn_heading = _nearest_segment_heading(spawn_position, float(spawn.get("heading", 0.0)))
+		var pose := _nearest_segment_pose(_point_to_vector(spawn.position), float(spawn.get("heading", 0.0)))
+		spawn_position = pose.position + Vector3(0, 0.42, 0)
+		spawn_heading = pose.heading
 		return
 
 	var target := Vector3(-230, 0.25, 285)
@@ -249,21 +253,23 @@ func _compute_spawn(slice: Dictionary) -> void:
 		var distance := hit.distance_to(target)
 		if distance < best_distance:
 			best_distance = distance
-			spawn_position = hit + Vector3(0, 0.32, 0)
+			spawn_position = hit + Vector3(0, 0.42, 0)
 			var delta: Vector3 = segment.end - segment.start
 			spawn_heading = atan2(delta.x, -delta.z)
 
-func _nearest_segment_heading(point: Vector3, fallback_heading: float) -> float:
+func _nearest_segment_pose(point: Vector3, fallback_heading: float) -> Dictionary:
 	var best_distance := INF
 	var best_heading := fallback_heading
+	var best_position := point
 	for segment in road_segments:
 		var hit := _closest_point_on_segment(point, segment.start, segment.end)
 		var distance := hit.distance_to(point)
 		if distance < best_distance:
 			best_distance = distance
+			best_position = hit
 			var delta: Vector3 = segment.end - segment.start
 			best_heading = atan2(delta.x, -delta.z)
-	return best_heading
+	return {"position": best_position, "heading": best_heading}
 
 func _add_box(name: String, position: Vector3, size: Vector3, heading: float, material: Material, lateral_offset := 0.0) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
