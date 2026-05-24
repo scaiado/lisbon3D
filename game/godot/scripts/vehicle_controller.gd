@@ -6,12 +6,14 @@ const ACCELERATION := 34.0
 const BRAKE_FORCE := 48.0
 const DRAG := 3.2
 const STEER_RATE := 2.2
+const STEER_RETURN := 8.0
 const CAR_WIDTH := 3.2
 const CAR_LENGTH := 5.4
 const COLLISION_RADIUS := 2.2
 
 var speed := 0.0
 var steering := 0.0
+var impact_flash := 0.0
 var road_segments: Array[Dictionary] = []
 var collision_zones: Array[Dictionary] = []
 
@@ -31,6 +33,7 @@ func configure(segments: Array[Dictionary], zones: Array[Dictionary]) -> void:
 func reset_motion() -> void:
 	speed = 0.0
 	steering = 0.0
+	impact_flash = 0.0
 
 func _physics_process(delta: float) -> void:
 	var throttle := Input.get_action_strength("accelerate")
@@ -40,10 +43,11 @@ func _physics_process(delta: float) -> void:
 
 	speed += throttle * ACCELERATION * delta
 	speed -= brake * BRAKE_FORCE * delta
-	speed = move_toward(speed, 0.0, DRAG * delta)
+	var drag_multiplier: float = 1.0 + abs(steering) * 0.45
+	speed = move_toward(speed, 0.0, DRAG * drag_multiplier * delta)
 	speed = clamp(speed, -12.0, MAX_SPEED * boost)
 
-	steering = lerp(steering, steer_input, min(delta * 8.0, 1.0))
+	steering = lerp(steering, steer_input, min(delta * STEER_RETURN, 1.0))
 	rotation.y -= steering * STEER_RATE * delta * clamp(abs(speed) / 18.0, 0.25, 1.0)
 
 	var previous_position := global_position
@@ -54,6 +58,13 @@ func _physics_process(delta: float) -> void:
 	else:
 		global_position = previous_position
 		speed *= -0.18
+		impact_flash = 0.14
+
+	impact_flash = max(impact_flash - delta, 0.0)
+	if impact_flash > 0.0:
+		scale = Vector3.ONE * (1.0 + impact_flash * 0.55)
+	else:
+		scale = scale.lerp(Vector3.ONE, min(delta * 12.0, 1.0))
 
 func _forward() -> Vector3:
 	return (-global_transform.basis.z).normalized()
