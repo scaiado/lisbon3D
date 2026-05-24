@@ -21,7 +21,7 @@ func _process(delta: float) -> void:
 	if not target or not camera:
 		return
 
-	var forward := Vector3(sin(target.rotation.y), 0, -cos(target.rotation.y))
+	var forward := (-target.global_transform.basis.z).normalized()
 	var desired := target.global_position - forward * trailing_distance + Vector3.UP * height
 	global_position = global_position.lerp(desired, min(delta * follow_speed, 1.0))
 

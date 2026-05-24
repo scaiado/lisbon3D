@@ -6,14 +6,17 @@ const ACCELERATION := 34.0
 const BRAKE_FORCE := 48.0
 const DRAG := 3.2
 const STEER_RATE := 2.2
+const ROAD_ALIGN_RATE := 3.8
 
 var speed := 0.0
 var steering := 0.0
 var road_segments: Array[Dictionary] = []
 
 var body_material := _make_material(Color(0.95, 0.22, 0.14), 0.45)
+var hood_material := _make_material(Color(1.0, 0.3, 0.22), 0.42)
 var glass_material := _make_material(Color(0.05, 0.11, 0.14), 0.35)
 var wheel_material := _make_material(Color(0.02, 0.02, 0.02), 0.8)
+var light_material := _make_material(Color(1.0, 0.9, 0.46), 0.2)
 
 func _ready() -> void:
 	_build_car_mesh()
@@ -39,15 +42,29 @@ func _physics_process(delta: float) -> void:
 	steering = lerp(steering, steer_input, min(delta * 8.0, 1.0))
 	rotation.y -= steering * STEER_RATE * delta * clamp(abs(speed) / 18.0, 0.25, 1.0)
 
-	var forward := Vector3(sin(rotation.y), 0, -cos(rotation.y))
-	global_position += forward * speed * delta
+	global_position += _forward() * speed * delta
 
 	var nearest := _nearest_road(global_position)
 	if nearest.has("point"):
 		var road_width := float(nearest.segment.get("width", 9.0))
+		_align_to_road(nearest.segment, steer_input, delta)
 		if nearest.distance > road_width * 0.82:
 			global_position = global_position.lerp(nearest.point + Vector3(0, global_position.y, 0), min(delta * 2.4, 1.0))
 			speed *= 0.985
+
+func _forward() -> Vector3:
+	return (-global_transform.basis.z).normalized()
+
+func _align_to_road(segment: Dictionary, steer_input: float, delta: float) -> void:
+	if abs(steer_input) > 0.08 or abs(speed) < 1.0:
+		return
+
+	var tangent: Vector3 = (segment.end - segment.start).normalized()
+	if tangent.dot(_forward()) < 0.0:
+		tangent = -tangent
+
+	var target_heading := atan2(tangent.x, -tangent.z)
+	rotation.y = lerp_angle(rotation.y, target_heading, min(delta * ROAD_ALIGN_RATE, 1.0))
 
 func _nearest_road(point: Vector3) -> Dictionary:
 	var best := {}
@@ -68,7 +85,10 @@ func _closest_point_on_segment(point: Vector3, start: Vector3, end: Vector3) -> 
 
 func _build_car_mesh() -> void:
 	_add_box("Body", Vector3(0, 0.45, 0), Vector3(1.65, 0.55, 2.85), body_material)
-	_add_box("Cabin", Vector3(0, 0.95, -0.2), Vector3(1.05, 0.55, 1.05), glass_material)
+	_add_box("FrontHood", Vector3(0, 0.75, -0.82), Vector3(1.28, 0.2, 0.88), hood_material)
+	_add_box("Cabin", Vector3(0, 0.95, 0.12), Vector3(1.05, 0.55, 0.96), glass_material)
+	_add_box("LeftHeadlight", Vector3(-0.44, 0.62, -1.48), Vector3(0.3, 0.12, 0.08), light_material)
+	_add_box("RightHeadlight", Vector3(0.44, 0.62, -1.48), Vector3(0.3, 0.12, 0.08), light_material)
 	for x in [-0.9, 0.9]:
 		for z in [-1.0, 1.0]:
 			_add_box("Wheel", Vector3(x, 0.24, z), Vector3(0.28, 0.42, 0.42), wheel_material)

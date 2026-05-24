@@ -239,7 +239,7 @@ func _compute_spawn(slice: Dictionary) -> void:
 	var spawn: Dictionary = slice.get("spawn", {})
 	if spawn.has("position"):
 		spawn_position = _point_to_vector(spawn.position) + Vector3(0, 0.32, 0)
-		spawn_heading = float(spawn.get("heading", 0.0))
+		spawn_heading = _nearest_segment_heading(spawn_position, float(spawn.get("heading", 0.0)))
 		return
 
 	var target := Vector3(-230, 0.25, 285)
@@ -252,6 +252,18 @@ func _compute_spawn(slice: Dictionary) -> void:
 			spawn_position = hit + Vector3(0, 0.32, 0)
 			var delta: Vector3 = segment.end - segment.start
 			spawn_heading = atan2(delta.x, -delta.z)
+
+func _nearest_segment_heading(point: Vector3, fallback_heading: float) -> float:
+	var best_distance := INF
+	var best_heading := fallback_heading
+	for segment in road_segments:
+		var hit := _closest_point_on_segment(point, segment.start, segment.end)
+		var distance := hit.distance_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			var delta: Vector3 = segment.end - segment.start
+			best_heading = atan2(delta.x, -delta.z)
+	return best_heading
 
 func _add_box(name: String, position: Vector3, size: Vector3, heading: float, material: Material, lateral_offset := 0.0) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
