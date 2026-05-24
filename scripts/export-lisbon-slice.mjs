@@ -6,20 +6,26 @@ import { dirname, resolve } from 'node:path';
 const LISBON_CENTER = [-9.1393, 38.7223];
 const DEG_PER_METER_LAT = 1 / 111_320;
 const DEG_PER_METER_LNG = 1 / (111_320 * Math.cos((LISBON_CENTER[1] * Math.PI) / 180));
-const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_ENDPOINTS = [
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://z.overpass-api.de/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.openstreetmap.ru/api/interpreter'
+];
 
 const DEFAULT_BOUNDS = {
-  south: 38.7046,
-  west: -9.1608,
-  north: 38.7318,
-  east: -9.1184
+  south: 38.7105,
+  west: -9.1498,
+  north: 38.7262,
+  east: -9.1282
 };
 
 const PLAYABLE_BOUNDS = {
-  minX: -520,
-  maxX: 520,
-  minZ: -380,
-  maxZ: 535
+  minX: -430,
+  maxX: 430,
+  minZ: -435,
+  maxZ: 360
 };
 
 const ROAD_WIDTH = {
@@ -81,17 +87,25 @@ function parseArgs(argv) {
 }
 
 async function fetchOverpass(bounds) {
-  const response = await fetch(OVERPASS_ENDPOINT, {
-    method: 'POST',
-    body: buildOverpassQuery(bounds),
-    headers: { 'content-type': 'text/plain;charset=UTF-8' }
-  });
+  const query = buildOverpassQuery(bounds);
+  let lastError = null;
 
-  if (!response.ok) {
-    throw new Error(`Overpass responded with ${response.status}`);
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: new URLSearchParams({ data: query }),
+        headers: { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+      });
+
+      if (response.ok) return response.json();
+      lastError = new Error(`${endpoint} responded with ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return response.json();
+  throw lastError || new Error('Overpass request failed');
 }
 
 function buildOverpassQuery({ south, west, north, east }) {
