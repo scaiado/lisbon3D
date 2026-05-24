@@ -6,8 +6,12 @@ extends Node3D
 @export var orthographic_size := 62.0
 
 var camera: Camera3D
+var fixed_yaw := 0.0
 
 func _ready() -> void:
+	if target:
+		fixed_yaw = target.rotation.y
+
 	camera = Camera3D.new()
 	camera.name = "ToyDriveCamera"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -25,4 +29,4 @@ func _process(delta: float) -> void:
 	global_position = global_position.lerp(desired, min(delta * follow_speed, 1.0))
 
 	camera.global_position = global_position
-	camera.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	camera.rotation = Vector3(deg_to_rad(-90.0), fixed_yaw, 0.0)

@@ -26,20 +26,20 @@ func _ready() -> void:
 
 	vehicle = VehicleController.new()
 	vehicle.name = "PlayerCar"
-	add_child(vehicle)
-	vehicle.global_position = world.get_spawn_position()
+	vehicle.position = world.get_spawn_position()
 	vehicle.rotation.y = world.get_spawn_heading()
 	vehicle.configure(world.get_road_segments())
+	add_child(vehicle)
 
 	camera_rig = CameraRig.new()
 	camera_rig.name = "CameraRig"
-	add_child(camera_rig)
 	camera_rig.target = vehicle
+	add_child(camera_rig)
 
 	audio_controller = AudioController.new()
 	audio_controller.name = "AudioController"
-	add_child(audio_controller)
 	audio_controller.vehicle = vehicle
+	add_child(audio_controller)
 
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("respawn") and vehicle:
