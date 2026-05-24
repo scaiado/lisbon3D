@@ -11,7 +11,12 @@ var spawn_heading := 0.0
 var asphalt_material := _make_material(Color(0.035, 0.055, 0.05), 0.9)
 var sidewalk_material := _make_material(Color(0.92, 0.88, 0.72), 0.95)
 var plaza_material := _make_material(Color(0.82, 0.74, 0.48), 0.98)
+var paving_material := _make_material(Color(0.74, 0.67, 0.43, 0.42), 0.98)
 var roof_material := _make_material(Color(0.74, 0.28, 0.16), 0.78)
+var junction_material := _make_material(Color(0.028, 0.045, 0.042), 0.9)
+var lane_material := _make_material(Color(0.82, 0.72, 0.34), 0.66)
+var bench_material := _make_material(Color(0.58, 0.27, 0.11), 0.82)
+var lamp_material := _make_material(Color(0.08, 0.08, 0.07), 0.7)
 var building_materials := [
 	_make_material(Color(0.86, 0.68, 0.48), 0.82),
 	_make_material(Color(0.91, 0.79, 0.59), 0.82),
@@ -30,11 +35,17 @@ func generate(slice: Dictionary) -> void:
 	_add_ground(slice)
 
 	var roads: Array = slice.get("roads", _fallback_roads())
-	_add_roads(roads)
+	var compiled_segments: Array = slice.get("roadSegments", [])
+	if compiled_segments.size() > 0:
+		_add_compiled_roads(compiled_segments, slice.get("junctions", []))
+	else:
+		_add_roads(roads)
 	_add_buildings(slice.get("buildings", []))
-	_add_greenery(slice.get("green", []), roads)
+	var props: Array = slice.get("props", [])
+	_add_greenery(slice.get("green", []), roads, props.is_empty())
+	_add_compiled_props(props)
 	_add_toy_landmarks()
-	_compute_spawn(roads)
+	_compute_spawn(slice)
 
 func get_spawn_position() -> Vector3:
 	return spawn_position
@@ -62,6 +73,17 @@ func _add_ground(slice: Dictionary) -> void:
 	ground.position = Vector3((bounds.minX + bounds.maxX) * 0.5, -0.02, (bounds.minZ + bounds.maxZ) * 0.5)
 	add_child(ground)
 
+	var center := ground.position
+	for i in range(-9, 10):
+		var stripe := MeshInstance3D.new()
+		stripe.name = "CalçadaGrain"
+		stripe.mesh = BoxMesh.new()
+		stripe.mesh.size = Vector3(width * 1.45, 0.012, 1.15)
+		stripe.position = center + Vector3(0, 0.004, i * 44.0)
+		stripe.rotation.y = deg_to_rad(18.0)
+		stripe.material_override = paving_material
+		add_child(stripe)
+
 func _add_roads(roads: Array) -> void:
 	for road in roads:
 		var points := _points_to_vectors(road.get("points", []))
@@ -70,6 +92,37 @@ func _add_roads(roads: Array) -> void:
 			continue
 		for i in range(points.size() - 1):
 			_add_road_segment(points[i], points[i + 1], width, road)
+
+func _add_compiled_roads(compiled_segments: Array, junctions: Array) -> void:
+	for segment in compiled_segments:
+		var start := _point_to_vector(segment.get("start", []))
+		var end := _point_to_vector(segment.get("end", []))
+		if start == end:
+			continue
+		var road := {
+			"name": segment.get("name", "Lisbon street"),
+			"type": segment.get("type", "street"),
+			"width": float(segment.get("width", DEFAULT_ROAD_WIDTH))
+		}
+		_add_road_segment(start, end, road.width, road)
+
+	for junction in junctions:
+		var center := _point_to_vector(junction.get("center", []))
+		var radius := float(junction.get("radius", 9.0))
+		_add_junction(center, radius)
+
+func _add_junction(center: Vector3, radius: float) -> void:
+	var node := MeshInstance3D.new()
+	node.name = "Junction"
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = 0.095
+	mesh.radial_segments = 32
+	node.mesh = mesh
+	node.position = center + Vector3(0, ROAD_HEIGHT + 0.012, 0)
+	node.material_override = junction_material
+	add_child(node)
 
 func _add_road_segment(start: Vector3, end: Vector3, width: float, road: Dictionary) -> void:
 	var delta := end - start
@@ -86,7 +139,7 @@ func _add_road_segment(start: Vector3, end: Vector3, width: float, road: Diction
 	_add_box("SidewalkR", center, Vector3(sidewalk_width, 0.06, length), heading, sidewalk_material, width * 0.5 + sidewalk_width * 0.5 + 0.25)
 
 	if road.get("type", "street") != "lane":
-		_add_box("CenterLine", center + Vector3(0, 0.1, 0), Vector3(0.25, 0.035, length * 0.72), heading, _make_material(Color(0.83, 0.72, 0.32), 0.6))
+		_add_box("CenterLine", center + Vector3(0, 0.1, 0), Vector3(0.25, 0.035, length * 0.72), heading, lane_material)
 
 	road_segments.append({
 		"start": start,
@@ -102,19 +155,22 @@ func _add_buildings(buildings: Array) -> void:
 		if points.size() < 3:
 			continue
 		var bounds := _bounds(points)
-		var height := clamp(float(building.get("height", 12.0)) * 0.85, 4.0, 38.0)
+		var height: float = clamp(float(building.get("height", 12.0)) * 0.85, 4.0, 38.0)
 		var material: Material = building_materials[index % building_materials.size()]
 		_add_box("Building", bounds.center + Vector3(0, height * 0.5, 0), Vector3(bounds.size.x, height, bounds.size.z), 0.0, material)
 		_add_box("Roof", bounds.center + Vector3(0, height + 0.16, 0), Vector3(bounds.size.x * 1.03, 0.32, bounds.size.z * 1.03), 0.0, roof_material)
 		index += 1
 
-func _add_greenery(green_features: Array, roads: Array) -> void:
+func _add_greenery(green_features: Array, roads: Array, add_roadside_trees := true) -> void:
 	for feature in green_features:
 		var points := _points_to_vectors(feature.get("points", []))
 		if points.size() < 3:
 			continue
 		var bounds := _bounds(points)
 		_add_box("GreenPatch", bounds.center + Vector3(0, 0.01, 0), Vector3(bounds.size.x, 0.025, bounds.size.z), 0.0, _make_material(Color(0.45, 0.68, 0.31, 0.55), 0.95))
+
+	if not add_roadside_trees:
+		return
 
 	for road in roads.slice(0, min(roads.size(), 90)):
 		var points := _points_to_vectors(road.get("points", []))
@@ -136,21 +192,56 @@ func _add_greenery(green_features: Array, roads: Array) -> void:
 				_add_tree(pos)
 				t += 0.34
 
-func _add_tree(position: Vector3) -> void:
-	_add_box("TreeTrunk", position + Vector3(0, 1.2, 0), Vector3(0.35, 2.4, 0.35), 0.0, trunk_material)
+func _add_compiled_props(props: Array) -> void:
+	for prop in props:
+		var position := _point_to_vector(prop.get("position", []))
+		var scale := float(prop.get("scale", 1.0))
+		match prop.get("kind", "tree"):
+			"tree":
+				_add_tree(position, scale, prop.get("variant", "jacaranda"))
+			"bush":
+				_add_bush(position, scale, prop.get("variant", "olive"))
+			"bench":
+				_add_bench(position, float(prop.get("rotation", 0.0)), scale)
+			_:
+				_add_bush(position, scale, "olive")
+
+func _add_tree(position: Vector3, scale := 1.0, variant := "jacaranda") -> void:
+	_add_box("TreeTrunk", position + Vector3(0, 1.15 * scale, 0), Vector3(0.32, 2.3, 0.32) * scale, 0.0, trunk_material)
 	var canopy := MeshInstance3D.new()
 	canopy.name = "TreeCanopy"
 	canopy.mesh = SphereMesh.new()
-	canopy.mesh.radius = 1.8
-	canopy.mesh.height = 2.5
-	canopy.position = position + Vector3(0, 3.1, 0)
-	canopy.material_override = leaf_materials[randi() % leaf_materials.size()]
+	canopy.mesh.radius = 1.7 * scale
+	canopy.mesh.height = 2.35 * scale
+	canopy.position = position + Vector3(0, 3.0 * scale, 0)
+	canopy.material_override = leaf_materials[_variant_index(variant) % leaf_materials.size()]
 	add_child(canopy)
+
+func _add_bush(position: Vector3, scale := 1.0, variant := "olive") -> void:
+	var bush := MeshInstance3D.new()
+	bush.name = "Bush"
+	bush.mesh = SphereMesh.new()
+	bush.mesh.radius = 0.9 * scale
+	bush.mesh.height = 1.0 * scale
+	bush.position = position + Vector3(0, 0.55 * scale, 0)
+	bush.scale = Vector3(1.25, 0.72, 1.0)
+	bush.material_override = leaf_materials[(_variant_index(variant) + 1) % leaf_materials.size()]
+	add_child(bush)
+
+func _add_bench(position: Vector3, heading: float, scale := 1.0) -> void:
+	_add_box("BenchSeat", position + Vector3(0, 0.46 * scale, 0), Vector3(2.4, 0.22, 0.55) * scale, heading, bench_material)
+	_add_box("BenchBack", position + Vector3(0, 0.83 * scale, -0.26 * scale), Vector3(2.4, 0.55, 0.18) * scale, heading, bench_material)
 
 func _add_toy_landmarks() -> void:
 	_add_box("ToyMonument", Vector3(-75, 8, 285), Vector3(5, 16, 5), 0.0, _make_material(Color(0.9, 0.67, 0.29), 0.7))
 
-func _compute_spawn(roads: Array) -> void:
+func _compute_spawn(slice: Dictionary) -> void:
+	var spawn: Dictionary = slice.get("spawn", {})
+	if spawn.has("position"):
+		spawn_position = _point_to_vector(spawn.position) + Vector3(0, 0.32, 0)
+		spawn_heading = float(spawn.get("heading", 0.0))
+		return
+
 	var target := Vector3(-230, 0.25, 285)
 	var best_distance := INF
 	for segment in road_segments:
@@ -178,8 +269,19 @@ func _points_to_vectors(points: Array) -> Array[Vector3]:
 	var vectors: Array[Vector3] = []
 	for point in points:
 		if point is Array and point.size() >= 2:
-			vectors.append(Vector3(float(point[0]) * WORLD_SCALE, 0, float(point[1]) * WORLD_SCALE))
+			vectors.append(_point_to_vector(point))
 	return vectors
+
+func _point_to_vector(point: Array) -> Vector3:
+	if point.size() < 2:
+		return Vector3.ZERO
+	return Vector3(float(point[0]) * WORLD_SCALE, 0, float(point[1]) * WORLD_SCALE)
+
+func _variant_index(value: String) -> int:
+	var hash := 0
+	for i in value.length():
+		hash = int(hash * 31 + value.unicode_at(i)) % 997
+	return abs(hash)
 
 func _bounds(points: Array[Vector3]) -> Dictionary:
 	var min_x := INF
@@ -198,10 +300,10 @@ func _bounds(points: Array[Vector3]) -> Dictionary:
 
 func _closest_point_on_segment(point: Vector3, start: Vector3, end: Vector3) -> Vector3:
 	var segment := end - start
-	var length_sq := segment.length_squared()
+	var length_sq: float = segment.length_squared()
 	if length_sq <= 0.001:
 		return start
-	var t := clamp((point - start).dot(segment) / length_sq, 0.0, 1.0)
+	var t: float = clamp((point - start).dot(segment) / length_sq, 0.0, 1.0)
 	return start + segment * t
 
 func _fallback_roads() -> Array:

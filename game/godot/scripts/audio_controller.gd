@@ -27,10 +27,10 @@ func _process(_delta: float) -> void:
 	if vehicle:
 		speed = abs(float(vehicle.get("speed")))
 
-	var frequency := 46.0 + speed * 2.1
-	var amplitude := 0.03 + min(speed / 62.0, 1.0) * 0.055
+	var frequency: float = 46.0 + speed * 2.1
+	var amplitude: float = 0.03 + min(speed / 62.0, 1.0) * 0.055
 	while playback.can_push_buffer(1):
 		phase = fmod(phase + frequency / generator.mix_rate, 1.0)
-		var saw := phase * 2.0 - 1.0
-		var sample := saw * amplitude
+		var saw: float = phase * 2.0 - 1.0
+		var sample: float = saw * amplitude
 		playback.push_frame(Vector2(sample, sample))

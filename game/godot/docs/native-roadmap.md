@@ -9,6 +9,8 @@
 
 ## Milestone 2 — Real World Model Upgrade
 
+- Move world cleanup into the offline Lisbon slice compiler.
+- Export explicit road segments, junctions, spawn metadata, and safe prop placement.
 - Replace box buildings with real footprint polygon meshes.
 - Build intersection polygons instead of independent road ribbons.
 - Generate block meshes between roads and buildings.

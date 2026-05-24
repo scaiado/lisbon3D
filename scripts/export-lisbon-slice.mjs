@@ -39,21 +39,29 @@ const parsed = parseOverpassElements(raw.elements || []);
 const projected = projectSlice(parsed);
 const roads = selectPlayableRoads(projected.roads);
 const buildings = selectPlayableBuildings(projected.buildings, roads);
+const compiledWorld = compileWorldArtifacts(roads, buildings, projected.green, projected.water);
 
 const slice = {
-  version: 1,
+  version: 2,
   generatedAt: new Date().toISOString(),
   center: LISBON_CENTER,
   bounds: DEFAULT_BOUNDS,
   playableBounds: PLAYABLE_BOUNDS,
   roads,
   buildings,
-  green: projected.green.filter((feature) => feature.points.some(([x, z]) => isInsidePlayableBounds(x, z))).slice(0, 80),
-  water: projected.water.filter((feature) => feature.points.some(([x, z]) => isInsidePlayableBounds(x, z))).slice(0, 24),
+  roadSegments: compiledWorld.roadSegments,
+  junctions: compiledWorld.junctions,
+  spawn: compiledWorld.spawn,
+  props: compiledWorld.props,
+  green: compiledWorld.green,
+  water: compiledWorld.water,
   metadata: {
     source: args.input ? 'local-overpass-json' : 'overpass-api',
     roadCount: roads.length,
-    buildingCount: buildings.length
+    buildingCount: buildings.length,
+    roadSegmentCount: compiledWorld.roadSegments.length,
+    junctionCount: compiledWorld.junctions.length,
+    propCount: compiledWorld.props.length
   }
 };
 
@@ -204,6 +212,153 @@ function selectPlayableBuildings(buildings, roads) {
   return selected.sort((a, b) => a.height - b.height).slice(0, 420);
 }
 
+function compileWorldArtifacts(roads, buildings, green, water) {
+  const roadSegments = buildRoadSegments(roads);
+  const junctions = buildJunctions(roads, roadSegments);
+  const blockedZones = buildBlockedZones(buildings, water, junctions);
+  const greenFeatures = green
+    .filter((feature) => feature.points.some(([x, z]) => isInsidePlayableBounds(x, z)))
+    .slice(0, 80);
+  const waterFeatures = water
+    .filter((feature) => feature.points.some(([x, z]) => isInsidePlayableBounds(x, z)))
+    .slice(0, 24);
+
+  return {
+    roadSegments,
+    junctions,
+    spawn: pickSpawn(roadSegments),
+    props: buildRoadsideProps(roadSegments, blockedZones),
+    green: greenFeatures,
+    water: waterFeatures
+  };
+}
+
+function buildRoadSegments(roads) {
+  const segments = [];
+  for (const road of roads) {
+    forEachSegment(road.points, (start, end, length) => {
+      if (length < 8) return;
+      const heading = Math.atan2(end[0] - start[0], -(end[1] - start[1]));
+      segments.push({
+        id: `${road.id}-${segments.length}`,
+        roadId: road.id,
+        name: road.name,
+        type: road.type,
+        highway: road.highway,
+        width: road.width,
+        start: roundPoint(start),
+        end: roundPoint(end),
+        center: roundPoint([(start[0] + end[0]) * 0.5, (start[1] + end[1]) * 0.5]),
+        length: round(length),
+        heading: round(heading, 4)
+      });
+    });
+  }
+  return segments.slice(0, 900);
+}
+
+function buildJunctions(roads, roadSegments) {
+  const buckets = new Map();
+  for (const road of roads) {
+    for (const point of road.points) {
+      if (!isInsidePlayableBounds(point[0], point[1])) continue;
+      const key = `${Math.round(point[0] / 14)}:${Math.round(point[1] / 14)}`;
+      const bucket = buckets.get(key) || { points: [], roadIds: new Set(), maxWidth: 0 };
+      bucket.points.push(point);
+      bucket.roadIds.add(road.id);
+      bucket.maxWidth = Math.max(bucket.maxWidth, road.width || ROAD_WIDTH.lane);
+      buckets.set(key, bucket);
+    }
+  }
+
+  const junctions = [];
+  for (const bucket of buckets.values()) {
+    if (bucket.points.length < 2 && bucket.roadIds.size < 2) continue;
+    const center = averagePoint(bucket.points);
+    const nearbySegments = roadSegments.filter((segment) => distancePointToSegment(center, segment.start, segment.end) < (segment.width || 8) * 0.72 + 7);
+    if (nearbySegments.length < 2) continue;
+    const radius = clamp(bucket.maxWidth * 0.62 + nearbySegments.length * 0.9, 7, 18);
+    junctions.push({
+      id: `junction-${junctions.length}`,
+      center: roundPoint(center),
+      radius: round(radius),
+      roadIds: [...bucket.roadIds].slice(0, 6)
+    });
+  }
+
+  return dedupeNearbyJunctions(junctions).slice(0, 160);
+}
+
+function buildBlockedZones(buildings, water, junctions) {
+  return [
+    ...buildings.map((building) => {
+      const bounds = footprintBounds(building.points);
+      return { center: [bounds.centerX, bounds.centerZ], radius: Math.max(bounds.width, bounds.depth) * 0.7 + 8 };
+    }),
+    ...water.map((feature) => {
+      const bounds = footprintBounds(feature.points);
+      return { center: [bounds.centerX, bounds.centerZ], radius: Math.max(bounds.width, bounds.depth) * 0.65 + 14 };
+    }),
+    ...junctions.map((junction) => ({ center: junction.center, radius: junction.radius + 10 }))
+  ];
+}
+
+function buildRoadsideProps(roadSegments, blockedZones) {
+  const props = [];
+  const treeTypes = ['jacaranda', 'olive', 'palm'];
+  for (const segment of roadSegments) {
+    if (segment.length < 36 || props.length > 520) continue;
+    const dir = normalize([segment.end[0] - segment.start[0], segment.end[1] - segment.start[1]]);
+    const normal = [-dir[1], dir[0]];
+    const spacing = segment.type === 'arterial' ? 32 : 46;
+    for (let distance = spacing * 0.45; distance < segment.length - 8; distance += spacing) {
+      const t = distance / segment.length;
+      const side = hashFloat(`${segment.id}-${distance}`) > 0.5 ? 1 : -1;
+      const edgeOffset = (segment.width || 9) * 0.5 + (segment.type === 'lane' ? 4.2 : 6.6);
+      const base = [
+        segment.start[0] + (segment.end[0] - segment.start[0]) * t,
+        segment.start[1] + (segment.end[1] - segment.start[1]) * t
+      ];
+      const position = [base[0] + normal[0] * side * edgeOffset, base[1] + normal[1] * side * edgeOffset];
+      if (!isSafePropPosition(position, blockedZones)) continue;
+      const seed = hashFloat(`${segment.id}-tree-${distance}`);
+      props.push({
+        kind: seed > 0.72 ? 'bush' : 'tree',
+        variant: treeTypes[Math.floor(seed * treeTypes.length) % treeTypes.length],
+        position: roundPoint(position),
+        rotation: round(segment.heading + (side > 0 ? Math.PI * 0.5 : -Math.PI * 0.5), 4),
+        scale: round(0.82 + hashFloat(`${segment.id}-scale-${distance}`) * 0.56)
+      });
+    }
+
+    if (segment.type !== 'lane' && segment.length > 55 && props.length < 600) {
+      const position = offsetAlongSegment(segment, 0.52, -((segment.width || 9) * 0.5 + 4.0));
+      if (isSafePropPosition(position, blockedZones)) {
+        props.push({ kind: 'bench', position: roundPoint(position), rotation: round(segment.heading, 4), scale: 1 });
+      }
+    }
+  }
+  return props;
+}
+
+function pickSpawn(roadSegments) {
+  const target = [-230, 285];
+  const sorted = roadSegments
+    .map((segment) => {
+      const hit = closestPointOnSegment(target, segment.start, segment.end);
+      return { segment, hit, score: hit.distance - segment.length * 0.05 };
+    })
+    .sort((a, b) => a.score - b.score);
+  const best = sorted[0]?.segment || roadSegments[0];
+  if (!best) return { position: [-230, 285], heading: 0, roadName: 'Lisbon street' };
+  const point = closestPointOnSegment(target, best.start, best.end).point;
+  return {
+    position: roundPoint(point),
+    heading: best.heading,
+    roadName: best.name
+  };
+}
+
 function selectConnectedRoadComponent(roads) {
   const endpointBuckets = new Map();
   roads.forEach((road, roadIndex) => {
@@ -310,6 +465,45 @@ function closestPointOnSegment(point, start, end) {
   return { point: projected, distance: Math.hypot(point[0] - projected[0], point[1] - projected[1]) };
 }
 
+function distancePointToSegment(point, start, end) {
+  return closestPointOnSegment(point, start, end).distance;
+}
+
+function averagePoint(points) {
+  const total = points.reduce((sum, point) => [sum[0] + point[0], sum[1] + point[1]], [0, 0]);
+  return [total[0] / points.length, total[1] / points.length];
+}
+
+function normalize(vector) {
+  const length = Math.hypot(vector[0], vector[1]) || 1;
+  return [vector[0] / length, vector[1] / length];
+}
+
+function offsetAlongSegment(segment, t, lateralOffset) {
+  const dir = normalize([segment.end[0] - segment.start[0], segment.end[1] - segment.start[1]]);
+  const normal = [-dir[1], dir[0]];
+  const base = [
+    segment.start[0] + (segment.end[0] - segment.start[0]) * t,
+    segment.start[1] + (segment.end[1] - segment.start[1]) * t
+  ];
+  return [base[0] + normal[0] * lateralOffset, base[1] + normal[1] * lateralOffset];
+}
+
+function isSafePropPosition(position, blockedZones) {
+  if (!isInsidePlayableBounds(position[0], position[1])) return false;
+  return blockedZones.every((zone) => Math.hypot(position[0] - zone.center[0], position[1] - zone.center[1]) > zone.radius);
+}
+
+function dedupeNearbyJunctions(junctions) {
+  const kept = [];
+  const sorted = [...junctions].sort((a, b) => b.radius - a.radius);
+  for (const junction of sorted) {
+    const duplicate = kept.some((other) => Math.hypot(junction.center[0] - other.center[0], junction.center[1] - other.center[1]) < Math.max(junction.radius, other.radius) * 0.85);
+    if (!duplicate) kept.push(junction);
+  }
+  return kept.sort((a, b) => a.center[1] - b.center[1]);
+}
+
 function forEachSegment(points, callback) {
   for (let i = 0; i < points.length - 1; i += 1) {
     const start = points[i];
@@ -358,6 +552,25 @@ function pseudoHeightSeed(tags) {
   let hash = 0;
   for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) % 997;
   return hash / 997;
+}
+
+function hashFloat(value) {
+  const text = String(value);
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 10000) / 10000;
+}
+
+function round(value, digits = 2) {
+  const scale = 10 ** digits;
+  return Math.round(value * scale) / scale;
+}
+
+function roundPoint(point) {
+  return [round(point[0]), round(point[1])];
 }
 
 function clamp(value, min, max) {

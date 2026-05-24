@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "generatedAt": "sample",
   "playableBounds": {
     "minX": -520,
@@ -10,7 +10,10 @@
   "metadata": {
     "source": "sample",
     "roadCount": 3,
-    "buildingCount": 5
+    "buildingCount": 5,
+    "roadSegmentCount": 10,
+    "junctionCount": 2,
+    "propCount": 18
   },
   "roads": [
     {
@@ -37,6 +40,47 @@
       "width": 7,
       "points": [[65, 300], [85, 205], [135, 110], [230, 45]]
     }
+  ],
+  "roadSegments": [
+    { "id": "sample-avenue-0", "roadId": "sample-avenue", "name": "Prototype Avenida", "type": "street", "highway": "residential", "width": 12, "start": [-230, 285], "end": [-180, 180], "center": [-205, 232.5], "length": 116.3, "heading": 0.44 },
+    { "id": "sample-avenue-1", "roadId": "sample-avenue", "name": "Prototype Avenida", "type": "street", "highway": "residential", "width": 12, "start": [-180, 180], "end": [-120, 60], "center": [-150, 120], "length": 134.16, "heading": 0.46 },
+    { "id": "sample-avenue-2", "roadId": "sample-avenue", "name": "Prototype Avenida", "type": "street", "highway": "residential", "width": 12, "start": [-120, 60], "end": [-50, -80], "center": [-85, -10], "length": 156.52, "heading": 0.46 },
+    { "id": "sample-avenue-3", "roadId": "sample-avenue", "name": "Prototype Avenida", "type": "street", "highway": "residential", "width": 12, "start": [-50, -80], "end": [35, -235], "center": [-7.5, -157.5], "length": 176.75, "heading": 0.5 },
+    { "id": "sample-cross-0", "roadId": "sample-cross", "name": "Rua Toy", "type": "street", "highway": "residential", "width": 10, "start": [-270, 35], "end": [-130, 50], "center": [-200, 42.5], "length": 140.8, "heading": 1.68 },
+    { "id": "sample-cross-1", "roadId": "sample-cross", "name": "Rua Toy", "type": "street", "highway": "residential", "width": 10, "start": [-130, 50], "end": [20, 45], "center": [-55, 47.5], "length": 150.08, "heading": 1.54 },
+    { "id": "sample-cross-2", "roadId": "sample-cross", "name": "Rua Toy", "type": "street", "highway": "residential", "width": 10, "start": [20, 45], "end": [180, 75], "center": [100, 60], "length": 162.79, "heading": 1.76 },
+    { "id": "sample-cross-3", "roadId": "sample-cross", "name": "Rua Toy", "type": "street", "highway": "residential", "width": 10, "start": [180, 75], "end": [300, 110], "center": [240, 92.5], "length": 125, "heading": 1.85 },
+    { "id": "sample-lane-0", "roadId": "sample-lane", "name": "Travessa Verde", "type": "lane", "highway": "service", "width": 7, "start": [65, 300], "end": [85, 205], "center": [75, 252.5], "length": 97.08, "heading": 0.21 },
+    { "id": "sample-lane-1", "roadId": "sample-lane", "name": "Travessa Verde", "type": "lane", "highway": "service", "width": 7, "start": [85, 205], "end": [135, 110], "center": [110, 157.5], "length": 107.35, "heading": 0.48 }
+  ],
+  "junctions": [
+    { "id": "junction-0", "center": [-124, 52], "radius": 10.5, "roadIds": ["sample-avenue", "sample-cross"] },
+    { "id": "junction-1", "center": [132, 103], "radius": 8.5, "roadIds": ["sample-cross", "sample-lane"] }
+  ],
+  "spawn": {
+    "position": [-230, 285],
+    "heading": 0.44,
+    "roadName": "Prototype Avenida"
+  },
+  "props": [
+    { "kind": "tree", "variant": "jacaranda", "position": [-244, 220], "rotation": -1.12, "scale": 1.1 },
+    { "kind": "tree", "variant": "olive", "position": [-166, 202], "rotation": 1.98, "scale": 0.95 },
+    { "kind": "bush", "variant": "olive", "position": [-205, 116], "rotation": 0.4, "scale": 1.2 },
+    { "kind": "tree", "variant": "palm", "position": [-92, 82], "rotation": 1.95, "scale": 1.05 },
+    { "kind": "tree", "variant": "jacaranda", "position": [-62, -20], "rotation": 1.94, "scale": 1.18 },
+    { "kind": "bush", "variant": "olive", "position": [-22, -112], "rotation": 0.4, "scale": 0.9 },
+    { "kind": "tree", "variant": "jacaranda", "position": [-210, 28], "rotation": 0.1, "scale": 1.0 },
+    { "kind": "tree", "variant": "olive", "position": [-44, 34], "rotation": -0.06, "scale": 0.9 },
+    { "kind": "bench", "position": [-15, 59], "rotation": 1.54, "scale": 1 },
+    { "kind": "tree", "variant": "jacaranda", "position": [88, 44], "rotation": 1.76, "scale": 1.15 },
+    { "kind": "bush", "variant": "olive", "position": [156, 88], "rotation": 1.76, "scale": 1.05 },
+    { "kind": "bench", "position": [206, 61], "rotation": 1.85, "scale": 1 },
+    { "kind": "tree", "variant": "palm", "position": [56, 235], "rotation": -1.36, "scale": 1.0 },
+    { "kind": "bush", "variant": "olive", "position": [98, 185], "rotation": 0.48, "scale": 0.95 },
+    { "kind": "tree", "variant": "jacaranda", "position": [152, 127], "rotation": 1.95, "scale": 1.08 },
+    { "kind": "bush", "variant": "olive", "position": [-306, 252], "rotation": 0, "scale": 1.4 },
+    { "kind": "tree", "variant": "jacaranda", "position": [205, 212], "rotation": 0, "scale": 1.2 },
+    { "kind": "bush", "variant": "olive", "position": [236, 198], "rotation": 0, "scale": 1.0 }
   ],
   "buildings": [
     { "id": "b1", "height": 16, "type": "apartments", "points": [[-210, 120], [-155, 118], [-150, 160], [-215, 165], [-210, 120]] },

@@ -60,10 +60,10 @@ func _nearest_road(point: Vector3) -> Dictionary:
 
 func _closest_point_on_segment(point: Vector3, start: Vector3, end: Vector3) -> Vector3:
 	var segment := end - start
-	var length_sq := segment.length_squared()
+	var length_sq: float = segment.length_squared()
 	if length_sq <= 0.001:
 		return start
-	var t := clamp((point - start).dot(segment) / length_sq, 0.0, 1.0)
+	var t: float = clamp((point - start).dot(segment) / length_sq, 0.0, 1.0)
 	return start + segment * t
 
 func _build_car_mesh() -> void:

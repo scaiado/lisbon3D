@@ -23,6 +23,7 @@ The exporter:
 - Projects lng/lat into the same local meter coordinate system as the web prototype.
 - Keeps one connected playable road component near the spawn.
 - Filters buildings away from road buffers.
+- Compiles Godot-ready road segments, junction disks, spawn metadata, and safe roadside props.
 - Exports roads, buildings, greenery, water, and metadata for Godot.
 
 ## Godot Project
@@ -32,7 +33,7 @@ Open `game/godot/project.godot` in Godot.
 Current vertical slice:
 
 - Generates a toy Lisbon world from `lisbon_slice.json` or the sample file.
-- Builds road ribbons, sidewalks, simple buildings, green patches, trees, and a monument.
+- Builds road ribbons, explicit junctions, sidewalks, simple buildings, green patches, trees, bushes, benches, and a monument.
 - Adds an arcade car controller, top-down chase camera, and generated engine tone.
 
 ## Direction
