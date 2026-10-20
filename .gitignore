@@ -4,6 +4,11 @@ node_modules/
 # Build output
 dist/
 
+# Test output
+test-results/
+playwright-report/
+blob-report/
+
 # Environment variables
 .env
 .env.local
@@ -23,8 +28,8 @@ npm-debug.log*
 # Vercel
 .vercel
 
-# Godot native prototype
-game/godot/.godot/
-game/godot/export_presets.cfg
-game/godot/builds/
-game/godot/data/lisbon_slice.json
+# Archived Godot prototype
+archive/godot-v0/.godot/
+archive/godot-v0/export_presets.cfg
+archive/godot-v0/builds/
+archive/godot-v0/data/lisbon_slice.json

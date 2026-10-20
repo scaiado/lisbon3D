@@ -1,0 +1,50 @@
+> **Archived 2026-10-20.** Frozen native experiment, kept for reference. Not part of the current game.
+> Paths below were updated for the archive location. See `archive/README.md`.
+
+# Lisbon Toy Drive — Godot Native Prototype
+
+This folder is the native-game foundation for the Steam/macOS direction. The web app remains the public sandbox; this Godot project is where the serious game world should move.
+
+## Requirements
+
+- Godot 4.6.x
+- Node.js 24+ for the Lisbon slice exporter
+
+## Data Pipeline
+
+Generate the playable Lisbon slice:
+
+```bash
+cd archive/web-v0 && npm ci && npm run export:godot-slice
+```
+
+That writes `archive/godot-v0/data/lisbon_slice.json`, which is intentionally ignored because it is generated data. The committed `lisbon_slice.sample.json` keeps the Godot project runnable without network access.
+
+The exporter:
+
+- Fetches OSM/Overpass data for central Lisbon.
+- Projects lng/lat into the same local meter coordinate system as the web prototype.
+- Keeps one connected playable road component near the spawn.
+- Filters buildings away from road buffers.
+- Compiles Godot-ready road segments, junction disks, spawn metadata, and safe roadside props.
+- Exports roads, buildings, greenery, water, and metadata for Godot.
+
+## Godot Project
+
+Open `archive/godot-v0/project.godot` in Godot 4.6.x.
+
+Current vertical slice:
+
+- Generates a toy Lisbon world from `lisbon_slice.json` or the sample file.
+- Builds road ribbons, explicit junctions, sidewalks, simple buildings, green patches, trees, bushes, benches, and a monument.
+- Adds an arcade car controller, top-down chase camera, and generated engine tone.
+
+## Direction
+
+Keep the first native milestone focused:
+
+1. One beautiful Baixa/Avenida slice.
+2. Clean connected roads.
+3. No broken intersections or blocked drive paths.
+4. Rich toy Lisbon greenery/materials.
+5. Five minutes of satisfying driving before expanding scope.
