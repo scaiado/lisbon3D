@@ -1,7 +1,7 @@
-# Lisbon3D — Restart Plan (Stage 0, revision 2)
+# Lisbon3D — Restart Plan (revision 3: visual-first)
 
-Status: **approved by kAI on 2026-10-20** (answers in §7). Stage 1 is implemented; see `progress.md` for what is done.
-Audited at `main` @ `e9dd1f6` (38 commits, Mar–Oct 2026). Revised 2026-10-20 after kAI reopened the engine decision.
+Status: **revision 3 awaiting kAI's approval.** Revisions 1–2 (engine, repo, Stage 1) were approved on 2026-10-20 and Stage 1 is done (PR #1, kept as a benchmark only). Revision 3 replaces the greybox-first sequence with a visual direction and asset-pipeline proof (§4–§5, §7); open questions are in §8.
+Audited at `main` @ `e9dd1f6` (38 commits, Mar–Oct 2026). Revised 2026-10-20 after kAI reopened the engine decision, and again the same day after kAI corrected the visual brief.
 
 **Product decisions already made by kAI:** area Chiado → Bica → Cais do Sodré · main activity Nata Run delivery with free roam · working title Lisbon3D · replace the current game code and archive useful material · keep Git history, never rewrite it · baked, attributed OSM data with no runtime map services.
 
@@ -90,103 +90,161 @@ In plain language: your brief makes "plays in a browser on a normal laptop" the 
 ```
 index.html            minimal shell, loading screen
 src/
-  main.ts             boot, renderer init (await renderer.init()), state machine: title → explore ↔ nata-run → results
+  main.ts             boot, renderer init, state machine: title → explore ↔ nata-run → results
   core/               fixed-step sim (60 Hz) + interpolated render, input (keyboard, Gamepad API), settings, quality tiers
-  world/              district loader, height function, road/curb/sidewalk/junction mesher, block + façade builder,
-                      landmark set-pieces, instanced prop scatter, river, sky
-  vehicle/            arcade microcar: raycast suspension against the road height function, grip/slide model,
-                      body roll/pitch/squash; collision vs footprint polygons and curbs (2D, swept circle)
+  world/              district loader (OSM geography), kit-based building placement from authored recipes,
+                      streets/curbs/calçada from the height function, landmark set-pieces, river and backdrop layers
+  vehicle/            arcade microcar: raycast suspension, grip/slide model, body roll/pitch/squash, collisions
   camera/             chase rig: look-ahead, slope-aware pitch, wall avoidance in lanes; postcard (photo) mode
   activity/           Nata Run: pickup, 3 drops, warmth meter, stars, results; 5 postcard spots
-  life/               tram on rails, a few tiny cars on splines, pedestrians, gulls (pooled)
-  render/             TSL materials, lighting, post chain, perf overlay (fps, frame time, draw calls, triangles)
+  life/               tram and funicular on rails, a few tiny cars, pedestrians, gulls (pooled)
+  render/             materials, lighting, post chain, perf overlay
   ui/                 DOM HUD (job card, compass ribbon), title, pause, results
-public/data/          district.json (compiled, committed, target < 1 MB), attribution.json
+art/                  asset SOURCE, never shipped: Blender build scripts, kit definitions, building recipes,
+                      texture sources (SVG/painted layers), style frames, asset ledger
+public/assets/        shipped, optimised assets: .glb (meshopt) + KTX2 textures
+public/data/          compiled district geography (small JSON), attribution
 data/raw/             raw OSM extract + extraction record (committed, never shipped)
-tools/                district compiler (TS, run with Node), slice validators, benchmark page
+tools/                district compiler, asset build (Blender → glTF → optimise), validators, benchmark
 tests/                Playwright functional tests
 docs/                 one doc per major component
 ```
 
-- **Language/tooling:** strict TypeScript 7.0.2 (`tsc --noEmit` in CI), Vite 8.3.4 for dev/build, Playwright 1.64.1. Exact versions pinned (no `^`), `package-lock.json` committed, `npm ci` only. No typescript-eslint until TS 7.1 ships an API; formatting/lint deferred, not blocked on.
-- **Physics:** custom arcade vehicle first (deterministic, tiny, tuned for feel). Rapier 0.21.0 is the fallback if Stage 2 shows custom collision isn't good enough.
-- **Data:** OSM (ODbL) for one district, extracted once, hand-cleaned, committed, credited in-game. **No runtime calls to Overpass or tile servers.** Elevation hand-authored per street from known gradients, cross-checked against public contour data; 30 m DEMs are too coarse.
-- **Content:** procedural but art-directed façade grammar (Pombaline, Bairro Alto narrow houses, tiled vs painted, balconies, shutters, laundry, shopfronts) seeded per building, plus hand-modelled landmarks built in code or as small glTF files. No asset-store packs.
+- **Language/tooling:** strict TypeScript 7.0.2, Vite 8.3.4, three 0.186.1, Playwright 1.64.1, exact pins and committed lockfile.
+- **Physics:** custom arcade vehicle first; Rapier 0.21.0 only if needed.
+- **Geography vs. look:** OSM gives street layout, footprints, heights and relationships. **It is never the visual design.** What players see comes from the authored Lisbon kit (§4b).
+- **Renderer:** the Stage 1 spike stays as a technical benchmark only. It is re-run on the visual-proof scene, which is far more representative than boxes; that run, not the box scene, informs the WebGPU vs WebGL choice.
 
 ---
 
-## 4. Creative direction
+## 4. Creative direction — an illustrated 3D Lisbon
 
-An original game: **a tiny courier in a sunlit miniature Lisbon.** Open-world driving is a mood reference for scale, light and discovery only. Nothing about crime, and nothing borrowed from that genre's look.
+An original game: **a tiny courier in a sunlit, illustrated Lisbon.** The ambition is the composition, light, material richness, detail and sense of place of a premium modern game, expressed as **illustration**, not realism. No objects, people, UI or visual signatures borrowed from any existing game.
 
-- **Style — tactile miniature:** rounded, chunky, readable shapes; matte painted surfaces with subtle roughness variation; soft contact shadows; gentle tilt-shift depth of field when the camera rises. Not generic flat low-poly.
-- **Light and palette:** fixed late-afternoon gold. Pastel ochre, rose, sage and lime-wash walls, terracotta roofs, azulejo blue/green accents, a silver-blue Tejo. Warm key light, cool bounce in narrow lanes.
-- **Environment:** steep streets you feel in the car; tiled façades, rooftops, laundry lines, calçada wave pavements, tram rails and overhead wires, the Bica funicular, the Santa Catarina viewpoint framing river and bridge, the Rua do Alecrim descent, Pink Street, the Cais do Sodré waterfront. Small surprises: a cat on a step, grill smoke, a tram bell, pigeons scattering.
-- **Vehicle:** an original 2-seat microcar (~2.4 × 1.3 m), rounded bubble body, big headlights, squash on bumps, body roll and nose dive, a cheerful little engine voice, three paint options. Traffic is other tiny cars; trams are big by comparison and a playful hazard.
-- **Camera:** low chase (~5 m back, ~2 m up, FOV ~55°), looks ahead into turns and down steep hills, drops lower and widens with speed, never clips walls in lanes. Postcard mode: free orbit, DoF, HUD hidden.
-- **Interface:** small and typographic. Cream cards, ink text, one accent colour, tile-inspired icons we draw ourselves. HUD = job card + compass ribbon only. Title screen over a slow flyover.
+**The look in one line:** a hand-illustrated city you can drive through — buildings that read like beautiful architectural drawings coloured with gouache, at true street scale, under warm late light.
+
+- **Façades are the stars.** Each building has a clear composition: rhythm of tall Pombaline windows, real depth (window reveals, sills, cornices, string courses, stone corner pilasters), wrought-iron balconies with real bars, shutters, tile panels, shopfronts with hand-lettered signs, laundry, plants, small damage and repairs. Plaster has a painted wash with visible brush texture and soft staining; azulejo panels have designed patterns (ours, inspired by Lisbon's tile traditions, not copied panels).
+- **Silhouettes and rooflines:** terracotta canal-tile roofs with visible tile rows, eaves, chimneys, dormers, mansards in Chiado, roof terraces, TV aerials, the odd palm or bougainvillea. Skylines step down the hill to the river.
+- **Ground:** calçada portuguesa with designed patterns (waves, borders), worn granite curbs, cobbles, tram rails set in stone, manholes, painted kerb marks.
+- **Light:** one strong warm late-afternoon sun; deep, coloured shade in narrow streets; bounce light glowing off ochre walls; baked ambient occlusion in every corner so nothing floats. Atmospheric haze layers the depth down to the Tejo.
+- **Depth and composition:** foreground (props, café tables), midground (the street), background (rooftops, river, far shore and bridge silhouette as layered painted cards). Every review view is composed like an illustration, not a map.
+- **Landmarks** get bespoke silhouettes: the Bica funicular car and its stepped street, the Santa Catarina viewpoint with its statue plinth and kiosk, Largo de Camões, the riverfront arcades at Cais do Sodré.
+- **Vehicle:** an original 2-seat microcar (~2.4 × 1.3 m) designed as a hero object: rounded body with panel lines, chrome trim, big expressive headlights, a roof rack with the pastry box, a little character in its stance. Designed and modelled properly, not a placeholder.
+- **People and animals:** small, simple, stylised figures that suit the illustration (no realistic humans). Cats, gulls, pigeons.
+- **Camera:** low chase (~5 m back, ~2 m up, FOV ~55°), looking down steep streets; close-up postcard mode.
+- **Interface:** small, typographic, cream and ink, our own tile-inspired icons.
+
+**Explicitly avoided:** bare cuboids, cone roofs, repeated procedural buildings, floating boxes, flat single-colour materials, generic low-poly, oversized UI, anything resembling another game's assets.
+
+### 4b. Asset pipeline
+
+1. **Style frames first.** Before modelling, 2–3 style frames of the proof scene to lock the illustration style (for example: soft gouache painting vs. clean ink-line illustration vs. painted miniature), plus palette and material swatches. You pick one.
+2. **Authored kit in Blender.** Modules modelled in Blender 5.2.2 from Python build scripts committed in `art/` (so every asset is reproducible and reviewable as text): window bays with reveals and frames, door and shopfront bays, cornices and string courses, corner pilasters, wrought-iron balconies, shutters, canal-tile roofs, eaves, chimneys, dormers, tile panels, signs, calçada borders, tram rails and wires, street furniture. Dimensions follow real Lisbon proportions.
+3. **Authored buildings, not random ones.** Each building is a hand-written recipe in `art/buildings/` (which bays, storeys, colours, tile pattern, signs, details). Procedural variation is limited to small things (weathering, plants, laundry placement) on top of authored choices. Landmarks are modelled one-off.
+4. **Illustrated textures.** Trim sheets and atlases authored as layered SVG/vector art (tile patterns, signage, ironwork, mouldings) plus painted wash layers; ambient occlusion, curvature and soft light baked in Blender into the colour maps so the painted look survives a simple real-time lighting model. **Optionally** AI-generated paint textures or concept images, only if you approve it (§8), each recorded in an asset ledger with source and licence.
+5. **Export and optimise.** glTF 2.0 (.glb) → glTF-Transform: deduplicate, instance, meshopt geometry compression, KTX2 textures (UASTC for hero colour/normal maps, ETC1S for the rest). Loaded with three.js `GLTFLoader` + `KTX2Loader` + `MeshoptDecoder`.
+6. **Two kinds of proof image.** (a) The **in-browser render** at the real chase-camera and street views — this is what the visual acceptance criteria judge, because it's what players get. (b) Optional Blender Cycles "target" renders of the same views, clearly labelled, to show the intended art direction when in-browser and offline differ.
+
+**What I can and can't do with the tools available here (verified 2026-10-20):**
+- Blender 5.2.2 is installable here as the official `bpy` Python module from PyPI (Python 3.13; ~400 MB download; blender.org itself is blocked from this sandbox). It runs headless; Cycles renders on 4 CPU cores — fine for stills, slow for animation. Not installed yet: it needs your OK (§8).
+- I model by **writing precise Blender scripts**, not by sculpting or painting with a mouse. That suits architecture (mouldings, balconies, tiles, roofs) very well and organic forms (trees, people, animals) less well; those stay simple and stylised.
+- I author textures as **vector art and layered procedural paint**, not freehand brushwork. The gouache feel comes from designed brush/wash textures, baked light and colour work. If you allow it, AI image generation (available in this session through Canva) can supply concept frames or painterly texture layers.
+- **Honest limit:** premium game art is normally made by environment artists and illustrators over months. The proof will show whether this pipeline reaches your bar on one street. If it doesn't, the realistic next step is a human 3D artist/illustrator for the kit and hero buildings; the pipeline is set up so their Blender/glTF files and textures drop straight in.
 
 ---
 
-## 5. First playable milestone — "One afternoon in Chiado"
+## 5. Visual proof (next stage, awaiting approval)
 
-District ≈ 600 × 450 m: Praça Luís de Camões and the tram 28 corridor, Rua do Loreto / Calçada do Combro, Bica funicular street, Miradouro de Santa Catarina, Rua do Alecrim, Rua Nova do Carvalho, Cais do Sodré waterfront.
+**Scene:** the top of the Bica street at the junction of Calçada do Combro / Rua do Loreto, looking down Rua da Bica de Duarte Belo toward the Tejo. About 120 m of street: the steep, narrow Bica slope with its funicular car and rails, the tram-28 street crossing at the top, ~12–16 authored buildings on both sides (two façade families: Pombaline Chiado blocks and narrow Bica houses), rooflines stepping down, and the river, far shore and bridge as layered backdrops. Geography is approximate for the proof (a reference sketch from public maps, no data fetch); OSM accuracy comes at district production.
+
+**Assets in the proof:** façade kit (~25 modules), ~14 authored building recipes, roof kit, calçada and stone ground set, tram/funicular rails and wires, the Bica funicular car (stylised, original), ~20 street props (lamps, bollards, kiosk, café set, planters, signs, bins, laundry), the hero microcar, a few stylised people/animals, sky and river backdrop cards.
+
+**Review images (in-browser, 1920 × 1080, also delivered as live views):**
+1. Street-level gameplay view: chase camera behind the microcar at the top of Bica, looking down the street to the river.
+2. Close view: one façade and its street edge — tiles, ironwork, shopfront, signage, calçada.
+3. Establishing view: higher, wider view down over the Bica rooftops to the river and bridge, reading unmistakably as Lisbon.
+
+**Visual acceptance criteria (judged on the in-browser images; you sign off):**
+1. No bare cuboids, cone roofs, flat single-colour surfaces or floating objects anywhere in the three views.
+2. Every façade has real relief (reveals, sills, cornices, balconies) and at least one Lisbon-specific detail (tile panel, ironwork, shutters, shopfront lettering, laundry).
+3. No two neighbouring buildings share a composition; repeats elsewhere are not noticeable in the three views.
+4. Roofline silhouette is varied (tiles, eaves, chimneys, dormers, steps down the hill) against the sky.
+5. Ground reads as Lisbon: calçada pattern, granite curbs, rails in stone.
+6. Lighting: warm sun, coloured shade, baked occlusion in corners, layered haze toward the river.
+7. Composition: clear foreground, midground and background in each view; the microcar is a charming, readable hero at chase distance.
+8. One coherent illustration style across buildings, props, car and backdrop.
+9. Someone who hasn't seen the project recognises Lisbon from view 1 or 3 without being told.
+10. Nothing copied: all models, textures, patterns and lettering are ours, or licensed and listed in the asset ledger.
+
+**Estimated effort (estimate, agent working sessions):** style frames 1 day · kit and landmark modelling 3–4 days · textures and baking 2–3 days · scene assembly and lighting 1–2 days · browser integration and compression 1 day · two review rounds ~1 day each. **Roughly 9–13 working days**, depending on review rounds.
+
+**Browser performance implications (estimates until measured on your M4):**
+- Detail costs mostly triangles and texture memory, not draw calls, if kit modules are merged per building and props are instanced. Proof target: ≤ 300 draw calls, ≤ 1.5 M visible triangles at the chase camera, GPU texture memory ≤ 512 MB (KTX2 stays compressed on the GPU).
+- Baked lighting/occlusion in textures lets real-time lighting stay simple (one shadowed sun, light post-processing), which is what keeps illustrated detail affordable in a browser.
+- Distant city and river are painted backdrop cards and simplified LODs, not full geometry.
+- The renderer benchmark from Stage 1 is re-run on the proof scene in Chrome, Safari and Firefox; the WebGPU vs WebGL decision is made then.
+
+---
+
+## 6. First playable milestone — "One afternoon in Chiado"
+
+District ≈ 600 × 450 m: Praça Luís de Camões and the tram 28 corridor, Rua do Loreto / Calçada do Combro, Bica funicular street, Miradouro de Santa Catarina, Rua do Alecrim, Rua Nova do Carvalho, Cais do Sodré waterfront. Built only after the visual proof is approved, from the same kit.
 
 **Nata Run:** collect a box of hot pastéis de nata at a bakery and deliver three orders (viewpoint, riverfront, a steep lane). A warmth meter replaces a hard timer; crashes and big bumps jiggle the box. Stars depend on warmth. Free roam between runs, with 5 hidden postcard spots.
 
-**Acceptance criteria** (performance numbers are targets; they count as met only when measured on real hardware)
-1. URL → title → Play → driving in **≤ 10 s** on broadband (measured on your laptop).
-2. **Total transfer ≤ 15 MB hard cap, ≤ 10 MB target** (estimate: ≤ 1 MB code, ≤ 1 MB data, rest textures/audio). Measured from the production build's network log.
-3. **Frame rate, measured on kAI's MacBook Air M4** in Chrome and Safari, default tier, with browser and macOS versions and the actual render resolution (CSS viewport, device pixel ratio, drawing-buffer pixels) recorded with every result: **60 fps target, 1 % lows ≥ 45 fps**. Firefox (WebGL 2 fallback) on the same machine: ≥ 45 fps default tier. An ordinary Intel Iris Xe / UHD-class laptop: ≥ 30 fps on the low tier. These are estimates until benchmarked; headless runs are never used as evidence.
-4. Handling: predictable accelerate/brake/slide/recover; climbs Bica and descends Alecrim; never stuck on curbs or seams; respawn (R) always lands on a road facing along it.
-5. Camera never ends inside geometry on any street of the district; steep streets read as steep.
-6. District closed and traversable: no holes, floating props, z-fighting; no two neighbouring buildings identical; ≥ 6 hand-built landmarks.
-7. Nata Run completable in 3–6 min with clear guidance, results, Retry and Back to exploring.
-8. Keyboard and gamepad; pause menu with restart, controls, quality tier, mute.
-9. Ambient life: ≥ 1 tram on rails, a handful of tiny cars, pedestrians, gulls; ambient city and engine audio.
-10. Works in current Chrome, Edge, Safari and Firefox on macOS and Windows; WebGL 2 fallback looks intentionally the same.
-11. OSM attribution visible; no third-party trademarks or assets; no credentials in the repo.
-12. A playtester who hasn't seen it calls it "Lisbon" unprompted.
+**Acceptance criteria** (performance numbers are targets; met only when measured on real hardware)
+1. URL → title → Play → driving in **≤ 15 s** on broadband (measured on your laptop), with the rest of the district streaming in while you drive.
+2. **Download budget, revised for illustrated assets (estimates, to be re-set from the proof's measured sizes):** initial load to playable **≤ 25 MB**; whole district **≤ 60 MB**, streamed. The old 15 MB cap is dropped because it would force the box look we are moving away from.
+3. **Frame rate on kAI's MacBook Air M4** in Chrome and Safari, default tier, with browser/OS versions and actual resolution recorded: **60 fps target, 1 % lows ≥ 45 fps**. Firefox (WebGL 2) ≥ 45 fps. Ordinary Intel Iris Xe / UHD-class laptop ≥ 30 fps on the low tier. Estimates until benchmarked; headless runs never count.
+4. All visual acceptance criteria from §5 hold across the district, not just the proof street.
+5. Handling: predictable accelerate/brake/slide/recover; climbs Bica, descends Alecrim; never stuck on curbs or seams; respawn always lands on a road.
+6. Camera never ends inside geometry; steep streets read as steep.
+7. District closed and traversable; ≥ 6 bespoke landmarks.
+8. Nata Run completable in 3–6 min with guidance, results, Retry and Back to exploring.
+9. Keyboard and gamepad; pause menu with restart, controls, quality tier, mute.
+10. Ambient life: tram, funicular, a few tiny cars, stylised pedestrians, gulls; ambient audio.
+11. Works in current Chrome, Edge, Safari and Firefox on macOS and Windows; the WebGL 2 path looks intentionally the same.
+12. OSM attribution visible; asset ledger complete; no third-party trademarks or assets; no credentials in the repo.
 
 ---
 
-## 6. Staged implementation
+## 7. Staged implementation (visual-first)
 
-Each stage ends with a summary, screenshots, check results, and a stop for approval. Each stage updates `progress.md` and `TODO.txt` and adds a `docs/<component>.md` per major component.
+Each stage ends with a summary, images, check results, and a stop for approval. Each stage updates `progress.md` and `TODO.txt` and adds a `docs/<component>.md` per major component.
 
 | Stage | Work | Done when |
 | --- | --- | --- |
-| **1. Clean base + renderer spike** | Archive per §2 (git mv), untrack `node_modules`/`dist`, blank the key in the 5 files, new TS/Vite app with pinned deps + lockfile, perf overlay, Playwright smoke test, `tsc` check. **Renderer spike:** one look-test scene (lit block, shadows, fog, bloom, AO, DoF, 2k instanced props) on WebGPURenderer, run with and without `forceWebGL`. | Archived game still runs from `archive/web-v0`; smoke test green; you run the benchmark page on your MacBook Air M4 in Chrome/Safari/Firefox and we pick WebGPURenderer or WebGLRenderer from the numbers and visuals. |
-| **2. Car + camera on a greybox hill** | Microcar and chase camera on a test street with a 20 % slope, a narrow lane and a hairpin. Decide custom vs Rapier. | You approve the feel in a 2-minute drive. Feel is locked before any art. |
-| **3. District blockout** | District compiler, baked data, height function, roads/curbs/sidewalks/junctions, building massing, collisions, river edge. | Whole district drivable in greybox; compiler validators pass; perf budget has headroom. |
-| **4. Art pass** | Lighting/post, façade grammar, roofs, calçada, azulejos, rails/wires, landmarks, props, sky/river. | Screenshot set from 8 fixed cameras approved by you, on both renderer backends. |
-| **5. Life + Nata Run** | Tram, traffic, pedestrians, gulls, audio, delivery loop, postcard spots, results. | Criteria 7–9 pass. |
-| **6. Polish + ship** | Title flyover, pause/settings, quality tiers, load time, attribution, Vercel preview deploy. | All criteria checked and recorded in `progress.md`. |
-
-**Performance budget (default tier, estimate):** ≤ 250 draw calls, ≤ 600 k visible triangles, one sun shadow with a tight cascade around the car, instanced props, merged static geometry per block, AO baked into vertex colours, few textures ≤ 2K, device pixel ratio capped at 1.5. Low tier: blob shadows, colour grade only.
+| **1. Clean base + renderer spike** ✓ | Archive, untrack, key removal, new TS/Vite/three app, look-test benchmark (PR #1). **Kept as a technical benchmark only; not merged to production.** | Done; benchmark re-run later on the proof scene. |
+| **2a. Visual direction** | Art-direction sheet, reference notes for Bica/Chiado, palette and material swatches, 2–3 style frames of the proof scene. | You pick one style. |
+| **2b. Visual proof + asset pipeline** | Blender kit and build scripts, ~14 authored buildings, Bica funicular, props, hero microcar, illustrated textures with baked light, glTF/KTX2 pipeline, three review images in the browser (+ optional Cycles targets). Re-run the renderer benchmark on this scene. | The §5 visual acceptance criteria pass and you approve the look. |
+| **3. Car + camera feel in the proof street** | Arcade microcar and chase camera tuned on the real Bica slope and junction, not a greybox. | You approve the feel in a 2-minute drive. |
+| **4. District production** | Local OSM export (your one command), district compiler, kit placed on real footprints with authored recipes, landmarks, streaming, budgets. | District passes §6 criteria 2–7 on your M4. |
+| **5. Life + Nata Run** | Trams, funicular, traffic, pedestrians, gulls, audio, delivery loop, postcard spots. | §6 criteria 8–10 pass. |
+| **6. Polish + ship** | Title flyover, pause/settings, quality tiers, load time, attribution, Vercel preview. | All criteria recorded in `progress.md`. |
 
 **Risks**
-- *WebGPURenderer maturity / fallback gaps* → Stage 1 spike across 4 browsers, TSL-only materials, a documented switch path to WebGLRenderer.
-- *Safari WebGPU partial, Firefox WebGL 2 only* → treat the WebGL 2 path as first-class; test both every stage.
-- *TypeScript 7 has no compiler API yet* → no tools that import `typescript`; revisit linting at TS 7.1.
-- *Rapier pre-1.0* → only adopted if needed, pinned exactly.
-- *Hill seams snag the car* → roads, curbs and sidewalks from one height function; curbs are collision lines, not steps.
-- *Art scope* → façade grammar first, few hero landmarks, nothing placeholder-looking ships.
-- *Narrow lanes vs camera* → collision-aware rig, tested on every street.
-- *OSM extraction blocked here* (this sandbox returns tunnel errors for OSM hosts) → either allow the Overpass host in the environment's network settings, or you run one documented command locally (below). No invented data.
-- *Native later* → engine-neutral data; honest that code wouldn't port to Godot.
+- *The scripted pipeline may not reach a premium illustrated look* → that is exactly what Stage 2 tests on one street before anything is scaled; fallback is a human artist for kit and hero assets, using the same pipeline.
+- *Asset weight in a browser* → KTX2 + meshopt, merged kit meshes, backdrop cards, streaming; budget re-set from measured proof numbers.
+- *Texture tooling here:* KTX2 encoding needs KTX-Software's `toktx` binary; if it can't be installed in this sandbox, WebP textures are the fallback for the proof (smaller download, more GPU memory) and KTX2 is produced locally.
+- *Style drift across many assets* → one style frame, shared trim sheets and palette, an asset ledger, and side-by-side reviews.
+- *AI-generated imagery* (only if approved) → used only where recorded in the ledger with source and licence; never for logos, signage wording or anything resembling real brands.
+- *WebGPU stability* (Stage 1 finding: r186 crashed in Chromium 141) → keep the automatic WebGL 2 fallback; decide the renderer on the proof scene.
+- *Narrow lanes vs camera, hill seams* → handled in Stage 3 on the real street.
+- *Native later* → glTF assets and recipes are engine-neutral.
 
-**Local OSM export step** (Stage 3, run by kAI; approved route): from the repo root, one command such as `node tools/export-district.ts --bbox 38.7060,-9.1490,38.7125,-9.1405 --out data/raw/district.osm.json` (Node 24, type-stripping). It makes one Overpass request (~1–3 MB) for `highway`, `building` (+ `building:levels`, `height`), `railway=tram|funicular`, `natural=water`, `leisure=park`, `amenity`, `tourism=viewpoint`, and writes the extraction date, query and source next to the data. The raw extract lives in `data/raw/`, **outside** `public/`, so it never ships to players; the compiler produces the small runtime file in `public/data/`. The exact command and bbox are finalised at the start of Stage 3.
+**Local OSM export step** (Stage 4, run by kAI; approved route): one command such as `node tools/export-district.ts --bbox 38.7060,-9.1490,38.7125,-9.1405 --out data/raw/district.osm.json` (Node 24). One Overpass request (~1–3 MB) for `highway`, `building` (+ `building:levels`, `height`), `railway=tram|funicular`, `natural=water`, `leisure=park`, `amenity`, `tourism=viewpoint`, with extraction date, query and source written next to the data. The raw extract stays in `data/raw/`, outside `public/`, so it never ships; the compiler produces the small runtime file. Command and bbox finalised at the start of Stage 4.
 
 **Verification**
-- Playwright 1.64.1 functional tests each stage: page loads, no console errors, renderer backend reported, scripted drive reaches a checkpoint, screenshots from fixed cameras. **Functional only, never frame-rate evidence.**
-- `tsc --noEmit`, district validators (connected graph, spawn on road, no building over a road).
-- Benchmark mode (`?bench=60`): 60 s scripted drive reporting average and 1 %-low fps, frame-time percentiles, draw calls, triangles, browser/OS/resolution. kAI runs it on the MacBook Air M4 (and an ordinary laptop if available), and the numbers go into `progress.md`.
-- Manual playtest checklist with your sign-off.
+- Visual: the three review images and live views, judged against §5 by you; a cold viewer for the "reads as Lisbon" test.
+- Playwright functional tests each stage (loads, no console errors, assets load, fixed-camera screenshots). Functional only, never frame-rate evidence.
+- Asset checks: glTF validation, texture sizes and formats, per-view draw calls and triangles, total download size from the build.
+- Benchmark mode (`?bench=60`) on your M4 for real numbers, recorded in `progress.md`.
 
 ---
 
-## 7. Decisions (answered by kAI, 2026-10-20)
+## 8. Decisions
+
+### Answered by kAI, 2026-10-20 (engine and repo)
 
 1. **Engine:** browser-first for this milestone with TypeScript 7.0.2, Vite 8.3.4 and three 0.186.1, exact versions pinned with a committed lockfile, rechecked before installing. `WebGPURenderer` stays behind the cross-browser spike; the WebGL 2 route is first-class. No Godot for this milestone.
 2. **Spike and benchmark:** approved. Target device is kAI's **MacBook Air M4** (not M1). kAI runs the benchmark in Chrome, Safari and Firefox; results record browser/OS versions and the actual resolution.
@@ -194,3 +252,15 @@ Each stage ends with a summary, screenshots, check results, and a stop for appro
 4. **OSM data:** the one-command local extraction at Stage 3; the environment's network settings stay as they are. Record extraction date, query, source and ODbL attribution; keep the raw extract out of the downloaded game assets and ship only the smallest compiled district data. No fetching in Stage 1.
 
 Earlier product decisions: area Chiado → Bica → Cais do Sodré; Nata Run delivery with free roam; working title Lisbon3D.
+
+### Visual brief correction (kAI, 2026-10-20)
+
+The Stage 1 scene is a renderer benchmark, not the art direction. Next is a visual direction and asset-pipeline proof, not a greybox. OSM is geography only; the look comes from an authored, illustrated Lisbon kit. The download cap may be revised for the intended quality. PR #1 is not merged to production, and no implementation stage starts until this revised plan and the visual direction are approved.
+
+### Needed from kAI before Stage 2a
+
+1. **Approve the visual-first sequence** in §7 and the proof scene in §5 (top of Bica at Calçada do Combro / Rua do Loreto, looking down to the river).
+2. **Approve installing Blender 5.2.2** (`bpy` from PyPI, ~400 MB) in the build environment, and, at Stage 2b, glTF tooling (`@gltf-transform/cli`, meshoptimizer) and KTX-Software for texture compression. Versions rechecked before installing.
+3. **AI-generated imagery:** not at all · concept/style frames only · also painterly texture layers (logged in the asset ledger).
+4. **Revised download budget** in §6 (≤ 25 MB to playable, ≤ 60 MB streamed, re-set after the proof): acceptable as a working estimate?
+5. **Human artist fallback:** if the proof doesn't reach your bar, are you open to commissioning a 3D environment artist/illustrator for the kit and hero assets?

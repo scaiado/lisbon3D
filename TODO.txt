@@ -2,27 +2,26 @@ Lisbon3D TODO
 =============
 
 Now (needs kAI)
-- [ ] Run the benchmark on the MacBook Air M4: renderer=webgpu, webgpu-gl2, webgl in Chrome, Safari, Firefox (docs/benchmark.md). Paste the JSON results.
+- [ ] Review plan.md revision 3 (visual-first) and answer §8: sequence + proof scene, Blender install, AI imagery policy, download budget, artist fallback.
 - [ ] Rotate the exposed MapTiler key in the MapTiler account.
-- [ ] Review Stage 1 and approve Stage 2.
+- [ ] Do not merge PR #1 to production; it is a technical benchmark only.
 
-After the benchmark
-- [ ] Pick the renderer (docs/renderer-spike.md, "How the decision will be made") and record it in progress.md.
-- [ ] Keep the WebGPU start-up fallback guard in the game whichever renderer wins.
+Stage 2a — visual direction (after approval)
+- [ ] Art-direction sheet, palette and material swatches.
+- [ ] Reference notes for Bica / Calçada do Combro / Rua do Loreto (proportions, materials, landmarks).
+- [ ] 2–3 style frames of the proof scene; kAI picks one.
 
-Stage 2 — car + camera on a greybox hill (not started)
-- [ ] Greybox test street: 20 % slope, narrow lane, hairpin.
-- [ ] Arcade microcar: raycast suspension on a height function, grip/slide, body roll and pitch.
-- [ ] Chase camera: look-ahead, slope-aware pitch, wall avoidance.
-- [ ] Keyboard + gamepad input; fixed-step simulation.
-- [ ] Decide custom collision vs Rapier 0.21.0.
+Stage 2b — visual proof + asset pipeline
+- [ ] Install Blender 5.2.2 (bpy) and glTF/KTX tooling (versions rechecked).
+- [ ] Blender build scripts for the façade, roof, ground and prop kit (art/).
+- [ ] ~14 authored building recipes; Bica funicular; hero microcar; props; backdrop cards.
+- [ ] Illustrated textures with baked light; asset ledger.
+- [ ] glTF → meshopt + KTX2; load in three.js; three in-browser review images (+ optional Cycles targets).
+- [ ] Re-run the renderer benchmark on the proof scene (Chrome, Safari, Firefox on the M4).
 
-Stage 3 — district blockout (not started)
-- [ ] Write tools/export-district.ts; kAI runs the one-command local OSM export into data/raw/ (never shipped).
-- [ ] Record extraction date, query, source and ODbL attribution.
-- [ ] District compiler → small public/data/district.json; validators.
-
-Later
+Later stages (see plan.md §7)
+- [ ] Stage 3: car + camera feel in the proof street.
+- [ ] Stage 4: district production (kAI runs the one-command OSM export into data/raw/, never shipped).
+- [ ] Stage 5: life + Nata Run. Stage 6: polish + ship.
+- [ ] Keep the WebGPU start-up fallback guard whichever renderer wins.
 - [ ] Revisit typescript-eslint once TypeScript 7.1 is the stable release.
-- [ ] Vercel: the project's production branch will serve the spike once this branch is merged; decide whether that is wanted or use a preview deployment.
-- [ ] Remove the spike's control panel and benchmark UI from the player build when the game shell exists (keep the benchmark as a separate page).

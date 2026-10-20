@@ -1,6 +1,16 @@
 # Progress
 
-## Stage 1 — Clean base + renderer spike (2026-10-20) — awaiting review
+## Plan revision 3 — visual-first (2026-10-20) — awaiting review
+- kAI corrected the visual brief: the Stage 1 look-test is primitive geometry and does not address the
+  product problem. The greybox car-and-camera stage is paused.
+- `plan.md` now puts a visual direction (2a) and an illustrated-Lisbon asset-pipeline proof (2b) first:
+  authored Blender kit, authored building recipes, illustrated textures with baked light, glTF/KTX2,
+  three in-browser review images, visual acceptance criteria, effort estimate, revised download budget.
+- Checked tools: Blender 5.2.2 is available as the `bpy` module from PyPI (~400 MB, Python 3.13);
+  blender.org is blocked from this sandbox. Not installed; waiting for approval.
+- PR #1 is kept as a technical benchmark only and is not to be merged to production.
+
+## Stage 1 — Clean base + renderer spike (2026-10-20) — done; benchmark only
 
 **Done**
 - Archived the old browser prototype to `archive/web-v0/`, the Godot experiment to `archive/godot-v0/`,
@@ -35,9 +45,9 @@
 
 **Built size (gzip):** app core ≈ 65 KB, WebGPU route ≈ 199 KB, WebGL route ≈ 99 KB (one route loads).
 
-**Waiting on**
-- kAI's benchmark runs on the MacBook Air M4: 3 routes × Chrome, Safari, Firefox.
-- Renderer decision from those numbers, then approval to start Stage 2.
+**Status after the visual brief correction**
+- The look-test scene is a renderer benchmark only; it is not the art direction.
+- The benchmark will be re-run on the visual-proof scene; the renderer choice waits for that run.
 
 ## Stage 0 — Audit and plan (2026-10-20) — approved
 - Audit and `plan.md`; revision 2 reopened the engine choice and chose browser-first.

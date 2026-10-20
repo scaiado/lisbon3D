@@ -1,7 +1,9 @@
 # Renderer spike
 
-Stage 1 component. Decides, from real-device numbers, whether the game uses three.js
-`WebGPURenderer` or the classic `WebGLRenderer`. The WebGL 2 route stays first-class either way.
+Stage 1 component. A **technical benchmark only**: the look-test scene is primitive geometry and is
+not the art direction (see `plan.md` §4). It measures whether the game uses three.js `WebGPURenderer`
+or the classic `WebGLRenderer`; that decision is made by re-running it on the visual-proof scene.
+The WebGL 2 route stays first-class either way.
 
 ## What runs
 
