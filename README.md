@@ -1,120 +1,74 @@
-# 🇵🇹 Lisbon 3D Explorer
+# Lisbon3D
 
-A web-based 3D map of Lisbon built entirely with open data and open-source tools.
+**A tiny Lisbon you can drive through.**
 
-**🔗 Live Demo:** https://lisbon.tinylittlelab.com
+A playable browser experiment that pairs a MapLibre aerial map with a toy-like
+Three.js driving world. It explores how real street geography can become a small,
+readable game space rather than a full city simulation.
 
-![Lisbon 3D Screenshot](docs/assets/snapshot-v0.png)
+![Local browser prototype in drive mode](docs/assets/drive-preview.png)
 
----
+<sub>Actual local browser capture. The native Godot prototype is a separate work in progress.</sub>
 
-## ✨ Features
+## Run locally
 
-- **3D Terrain** — Real elevation data from Portuguese government LiDAR
-- **3D Buildings** — Extruded building footprints with height data
-- **POV Walking Mode** — Walk through Lisbon streets in first-person (WASD controls)
-- **Landmark Markers** — São Jorge Castle, Belém Tower, Cristo Rei
-- **100% Open Data** — No proprietary sources, no paid APIs
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| **3D Rendering** | [MapLibre GL JS](https://maplibre.org/) |
-| **Terrain Data** | DGT (Direção-Geral do Território) LiDAR |
-| **Building Data** | MapTiler + OpenStreetMap |
-| **Base Tiles** | OpenStreetMap |
-| **Hosting** | Vercel |
-| **Domain** | Tiny Little Lab |
-
----
-
-## 📊 Data Sources
-
-- **DGT LiDAR** — Portuguese government open data (terrain elevation)
-- **CML (Câmara Municipal de Lisboa)** — Building footprints and heights
-- **OpenStreetMap** — Base map tiles and geographic data
-- **MapTiler** — 3D building extrusions and terrain tiles
-
-All data is **openly licensed** and free to use.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- A free [MapTiler](https://cloud.maptiler.com/account/keys/) API key
-
-### Installation
+Use Node.js 22+ and npm. From the repository root:
 
 ```bash
-# Clone the repo
 git clone https://github.com/scaiado/lisbon3D.git
 cd lisbon3D
-
-# Install dependencies
-npm install
-
-# Add your MapTiler key (optional - for full 3D terrain)
-# Edit main.js and replace MAPTILER_KEY
-
-# Start dev server
+npm ci
 npm run dev
 ```
 
-### Build for Production
+Open the local URL printed by Vite and choose **Enter Drive Mode**.
+The current entry point does not require a MapTiler key.
 
 ```bash
 npm run build
+npm run preview
 ```
 
----
+## Explore
 
-## 🎮 Controls
+| Control | Action |
+| --- | --- |
+| WASD / arrow keys | Drive and steer |
+| Shift | Boost |
+| Space | Brake |
+| R | Respawn |
+| M / Back To Aerial | Return to the map |
 
-| Key | Action |
-|-----|--------|
-| **WASD** | Walk (in POV mode) |
-| **P** | Toggle POV / Aerial mode |
-| **R** | Reset view to center |
-| **Mouse Drag** | Rotate view |
-| **Scroll** | Zoom in/out |
-| **Pitch Slider** | Adjust camera angle |
+The aerial map uses OpenStreetMap tiles. The driving world can load roads,
+buildings, water, and greenery through Overpass, caching the geographic slice in
+browser storage. If that request fails, the app keeps its procedural fallback.
 
----
+## Status and limits
 
-## 🗺️ Roadmap
+This is a prototype, not a geographically precise model of Lisbon. Building
+heights may be inferred; driving, collisions, and street geometry are simplified.
+WebGL is required. Map tiles and fresh OSM data require network access, and public
+services can be unavailable or rate-limited.
 
-- [x] v0.0 — Basic 3D viewer with terrain
-- [ ] v0.1 — Add CML municipal building data
-- [ ] v0.2 — Custom Lisbon-inspired UI design
-- [ ] v0.3 — Full DGT LiDAR resolution
-- [ ] v1.0 — Complete city experience with search
+The previously advertised Lisbon subdomain currently serves the Tiny Little Lab
+homepage, so this README points to the reproducible local app instead of claiming
+a live game deployment. The screenshot above shows the browser version, not a
+finished native release.
 
----
+## Native experiment
 
-## 🏗️ Build in Public
+A separate Godot project lives in [`game/godot`](game/godot/README.md).
+Open `game/godot/project.godot` with Godot 4.6.x; the committed sample data allows
+a first run without fetching a new city slice. See its README for the optional
+Node.js 24+ exporter workflow.
 
-This project was built in public over 37 minutes using a team of AI agents:
+## Data and attribution
 
-- **Scout** — Data acquisition (DGT LiDAR, CML buildings)
-- **Forge** — 3D web visualization
-- **Pixel** — UI/UX design
-- **Peter** — Project coordination
-
-Follow the build journey: [@scaiado](https://x.com/scaiado)
-
----
-
-## 📄 License
-
-- **Code:** MIT License
-- **Data:** Open Data (CC-BY where applicable)
+Geographic data comes from OpenStreetMap contributors; its licensing and
+attribution requirements still apply. The current browser entry point uses
+MapLibre and Three.js. Earlier terrain and design explorations remain in the
+repository; their plans do not describe every feature of the current app.
 
 ---
 
-Built with ❤️ in Lisbon by [Tiny Little Lab](https://tinylittlelab.com)
+A [Tiny Little Lab](https://www.tinylittlelab.com/) experiment by Sérgio Caiado.
