@@ -1,0 +1,28 @@
+Lisbon3D TODO
+=============
+
+Now (needs kAI)
+- [ ] Run the benchmark on the MacBook Air M4: renderer=webgpu, webgpu-gl2, webgl in Chrome, Safari, Firefox (docs/benchmark.md). Paste the JSON results.
+- [ ] Rotate the exposed MapTiler key in the MapTiler account.
+- [ ] Review Stage 1 and approve Stage 2.
+
+After the benchmark
+- [ ] Pick the renderer (docs/renderer-spike.md, "How the decision will be made") and record it in progress.md.
+- [ ] Keep the WebGPU start-up fallback guard in the game whichever renderer wins.
+
+Stage 2 — car + camera on a greybox hill (not started)
+- [ ] Greybox test street: 20 % slope, narrow lane, hairpin.
+- [ ] Arcade microcar: raycast suspension on a height function, grip/slide, body roll and pitch.
+- [ ] Chase camera: look-ahead, slope-aware pitch, wall avoidance.
+- [ ] Keyboard + gamepad input; fixed-step simulation.
+- [ ] Decide custom collision vs Rapier 0.21.0.
+
+Stage 3 — district blockout (not started)
+- [ ] Write tools/export-district.ts; kAI runs the one-command local OSM export into data/raw/ (never shipped).
+- [ ] Record extraction date, query, source and ODbL attribution.
+- [ ] District compiler → small public/data/district.json; validators.
+
+Later
+- [ ] Revisit typescript-eslint once TypeScript 7.1 is the stable release.
+- [ ] Vercel: the project's production branch will serve the spike once this branch is merged; decide whether that is wanted or use a preview deployment.
+- [ ] Remove the spike's control panel and benchmark UI from the player build when the game shell exists (keep the benchmark as a separate page).
