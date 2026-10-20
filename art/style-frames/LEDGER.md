@@ -16,7 +16,7 @@ proof scene and reviewed separately.
 Board: Canva design `DAHYlwV98nQ` ("Lisbon3D style frames"), pages 2–4 hold A v2, B v2, C v2.
 Page 1 is the auto-generated cover with Canva stock photos; it is not ours and is not used.
 
-Prompts: the full prompts are kept in this file's git history alongside `BRIEF.md`; v2 changed the vehicle to an
+Prompts: each prompt is the BRIEF.md scene plus its direction paragraph. v2 changed the vehicle to an
 invented pastry-delivery microcar (one-seat cab, wraparound windscreen, rounded rear cargo box with a pastry icon)
 and pushed the three styles further apart.
 
