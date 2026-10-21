@@ -50,8 +50,10 @@ function isBackdrop(mesh: Mesh): boolean {
 }
 
 function toPaintedCard(material: Material): Material {
-  const map = 'map' in material ? (material.map as Texture | null) : null;
-  const color = 'color' in material ? (material.color as Color) : undefined;
+  // Blender exports its unlit cards as emission, so the painting may arrive as the emissive map.
+  const painted = (key: 'map' | 'emissiveMap'): Texture | null => (key in material ? (material as unknown as Record<string, Texture | null>)[key] ?? null : null);
+  const map = painted('map') ?? painted('emissiveMap');
+  const color = map ? undefined : 'color' in material ? (material.color as Color) : undefined;
   const card = new MeshBasicMaterial({ name: material.name, map, color, transparent: true, alphaTest: 0.35, fog: false, depthWrite: false });
   material.dispose();
   return card;

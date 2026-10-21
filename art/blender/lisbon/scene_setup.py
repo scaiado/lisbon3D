@@ -8,8 +8,11 @@ from mathutils import Vector
 from . import street as S
 from . import materials as Mt
 
-# low warm sun ahead-right of the downhill view (south-west), 17 degrees up
-TO_SUN = Vector((0.72, 0.62, math.tan(math.radians(17)))).normalized()
+# warm late-afternoon sun over the river, almost straight down the street, 34 degrees up, so light runs down the narrow
+# street and grazes the west façades (any real sideways component leaves the street in shade); the engine uses the
+# same direction (src/proof/look.ts)
+_H = Vector((0.12, 0.99, 0.0)).normalized()
+TO_SUN = Vector((_H.x * math.cos(math.radians(34)), _H.y * math.cos(math.radians(34)), math.sin(math.radians(34))))
 
 VIEWS = {
     # name: (camera position, look-at target, vertical fov degrees)

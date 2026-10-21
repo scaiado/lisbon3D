@@ -18,8 +18,8 @@ import { describeWebGL } from './gpuInfo';
 export function createWebGLRoute(context: RouteContext): RenderRoute {
   const { scene, camera, effects } = context;
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-  renderer.toneMapping = AgXToneMapping;
-  renderer.toneMappingExposure = LOOK.exposure;
+  renderer.toneMapping = context.toneMapping?.mapping ?? AgXToneMapping;
+  renderer.toneMappingExposure = context.toneMapping?.exposure ?? LOOK.exposure;
   renderer.shadowMap.enabled = effects.shadows;
   renderer.shadowMap.type = PCFShadowMap;
   renderer.info.autoReset = false;

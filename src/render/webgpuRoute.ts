@@ -34,8 +34,8 @@ export async function createWebGPURoute(
     onFatal?.(`WebGPU device lost: ${info.reason ?? 'unknown'} ${info.message ?? ''}`.trim());
   };
 
-  renderer.toneMapping = AgXToneMapping;
-  renderer.toneMappingExposure = LOOK.exposure;
+  renderer.toneMapping = context.toneMapping?.mapping ?? AgXToneMapping;
+  renderer.toneMappingExposure = context.toneMapping?.exposure ?? LOOK.exposure;
   renderer.shadowMap.enabled = effects.shadows;
   renderer.shadowMap.type = PCFShadowMap;
   renderer.info.autoReset = false;

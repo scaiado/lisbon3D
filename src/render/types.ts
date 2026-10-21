@@ -1,4 +1,4 @@
-import type { PerspectiveCamera, Scene } from 'three';
+import type { PerspectiveCamera, Scene, ToneMapping } from 'three';
 import type { EffectFlags, RendererRoute } from '../core/options';
 
 /** What the rest of the app needs from a renderer route, independent of WebGPU or WebGL. */
@@ -22,6 +22,8 @@ export interface RouteContext {
   scene: Scene;
   camera: PerspectiveCamera;
   effects: EffectFlags;
+  /** Tone mapping and exposure; the renderer spike's AgX look when left out. */
+  toneMapping?: { mapping: ToneMapping; exposure: number };
   /** Called if the GPU device is lost after start-up, so the app can fall back to WebGL 2. */
   onFatal?: (reason: string) => void;
 }

@@ -2,15 +2,23 @@
  * Light and colour targets for direction C (art/style-frames/STYLE-C.md), shared by both renderer routes.
  * Values are tuned by eye against the reference frame, not physically derived.
  */
+import { ACESFilmicToneMapping } from 'three';
+
 export const PROOF_LOOK = {
-  /** Toward the sun: low (17°), ahead-right of the downhill view; same as TO_SUN in art/blender/lisbon/scene_setup.py. */
-  sunDirection: [0.72, 0.306, -0.62] as const,
-  sunColor: '#ffd7a0',
-  sunIntensity: 3.1,
+  /** ACES keeps the saturated storybook colour of direction C; AgX (the spike's choice) washed it out. */
+  toneMapping: { mapping: ACESFilmicToneMapping, exposure: 0.95 },
+  /**
+   * Toward the sun: 34° up over the river, almost straight down the street (as in the style frame), so light runs
+   * down the 6 m wide Bica and grazes the left-hand façades. Any real sideways component puts the whole street in
+   * the shade of the right-hand houses. Same as TO_SUN in art/blender/lisbon/scene_setup.py.
+   */
+  sunDirection: [0.100, 0.559, -0.823] as const,
+  sunColor: '#ffd29a',
+  sunIntensity: 4.6,
   /** Blue-violet sky fill and warm ochre bounce, so shade is coloured, never grey. */
   hemisphereSky: '#7d86c4',
   hemisphereGround: '#c98a52',
-  hemisphereIntensity: 1.15,
+  hemisphereIntensity: 0.8,
   environmentIntensity: 0.35,
   haze: { color: '#f0cfa2', near: 60, far: 2600 },
   shadowMapSize: 4096,

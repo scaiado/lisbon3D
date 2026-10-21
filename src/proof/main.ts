@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { readOptions } from '../core/options';
 import { createRoute } from '../render/createRoute';
 import { addProofLighting } from './lighting';
+import { PROOF_LOOK } from './look';
 import { loadProofAssets } from './assets';
 import { PROOF_VIEWS, applyPose, placeMicrocar, viewPose, type ProofView } from './views';
 
@@ -48,7 +49,7 @@ async function start(): Promise<void> {
   scene.add(assets.street, assets.microcar);
   placeMicrocar(assets.microcar, assets.street);
 
-  const route = await createRoute(options.route, { scene, camera, effects: options.effects });
+  const route = await createRoute(options.route, { scene, camera, effects: options.effects, toneMapping: PROOF_LOOK.toneMapping });
   document.body.dataset['backend'] = route.backend;
   root.prepend(route.canvas);
 

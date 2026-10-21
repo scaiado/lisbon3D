@@ -3,7 +3,8 @@
 Beyond the authored street the city is a field of simple painted blocks: plaster walls carrying the painted
 far-façade texture, real pitched roofs with an overhang and chimneys, stepping down the hill to the riverfront.
 They take fog and shadows in the engine. The river is one plane; the far shore and the bridge are painted cards
-(named backdrop_*, unlit, no fog: their haze is painted in).
+(named backdrop_*, unlit, no fog: their haze is painted in). The cards sit closer than the real south bank
+(1.1–1.3 km, not 2–3 km) so they read in the review views, as in the style frame.
 """
 import math
 import random
@@ -62,12 +63,12 @@ def build(collection, seed=401):
     objs = [mid.build('midground', collection, bevel_width=0.0)]
 
     water = MeshBuilder()
-    water.poly('river', [(-4000, QUAY_Y, RIVER_Z), (4000, QUAY_Y, RIVER_Z), (4000, 3000, RIVER_Z), (-4000, 3000, RIVER_Z)])
+    water.poly('river', [(-3000, QUAY_Y, RIVER_Z), (3000, QUAY_Y, RIVER_Z), (3000, 1400, RIVER_Z), (-3000, 1400, RIVER_Z)])
     water.box('granite', (-400, QUAY_Y - 6, RIVER_Z - 2), (400, QUAY_Y, QUAY_Z + 0.3), bevel=False)
     objs.append(water.build('river', collection, bevel_width=0.0))
 
-    objs.append(card('backdrop_far_shore', 'backdrop_far_shore', collection, -3600, 3600, 2700, RIVER_Z - 2, RIVER_Z + 200))
-    objs.append(card('backdrop_bridge', 'backdrop_bridge', collection, 400, 2600, 2300, RIVER_Z - 6, RIVER_Z + 210))
+    objs.append(card('backdrop_far_shore', 'backdrop_far_shore', collection, -2600, 2600, 1300, RIVER_Z - 2, RIVER_Z + 170))
+    objs.append(card('backdrop_bridge', 'backdrop_bridge', collection, 150, 1550, 1100, RIVER_Z - 4, RIVER_Z + 140))
     return objs
 
 
