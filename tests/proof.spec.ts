@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const VIEWS = ['chase', 'facade', 'establish'] as const;
+const VIEWS = ['chase', 'carside', 'facade', 'establish'] as const;
 const built = existsSync('public/assets/proof/bica.glb') && existsSync('public/assets/proof/microcar.glb');
 
 /**
@@ -36,4 +36,12 @@ test.describe('visual proof', () => {
       }
     });
   }
+
+  test('report mode measures every view and shows copyable results', async ({ page }) => {
+    await page.goto('/proof.html?report=1&warmup=0.2&seconds=0.5&dpr=0.5');
+    await expect(page.locator('body')).toHaveAttribute('data-report', 'done', { timeout: 240_000 });
+    const report = await page.evaluate(() => window.__lisbonProof?.['report'] as { views: { view: string; summary: { frames: number } }[] });
+    expect(report.views.map((entry) => entry.view)).toEqual([...VIEWS]);
+    for (const entry of report.views) expect(entry.summary.frames).toBeGreaterThan(0);
+  });
 });

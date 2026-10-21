@@ -6,12 +6,14 @@ import { createRoute } from '../render/createRoute';
 import { addProofLighting } from './lighting';
 import { PROOF_LOOK } from './look';
 import { loadProofAssets } from './assets';
+import { showReport, startReport } from './report';
 import { PROOF_VIEWS, applyPose, placeMicrocar, viewPose, type ProofView } from './views';
 
 /**
  * Stage 2b visual proof: the Blender-built top of the Bica, lit in-engine, seen from the three review views.
  *
- *   ?view=chase|facade|establish   review camera (default chase); ?view=free adds orbit controls
+ *   ?view=chase|carside|facade|establish   review camera (default chase); ?view=free adds orbit controls
+ *   ?report=1   frame-rate run over every view (3 s warm-up + 10 s each; ?warmup= and ?seconds= override)
  *   ?renderer=webgl|webgpu|webgpu-gl2 and the effect switches work as in the renderer spike; ?dof=1 turns depth of field on.
  *   The proof defaults to the classic WebGL 2 route, the first-class path until the renderer is decided.
  */
@@ -68,7 +70,7 @@ async function start(): Promise<void> {
     controls?.target.copy(pose.target);
     route.setFocusDistance(pose.focus);
     const center = pose.position.clone().lerp(pose.target, 0.35);
-    lighting.fitShadow(center, view === 'establish' ? 140 : 60);
+    lighting.fitShadow(center, view === 'establish' ? 140 : view === 'carside' ? 25 : 60);
     document.body.dataset['view'] = view;
   };
   show(view);
@@ -83,12 +85,17 @@ async function start(): Promise<void> {
     if (event.key === 'p') console.info('[Lisbon3D] camera', camera.position.toArray(), 'looking', camera.getWorldDirection(new Vector3()).toArray());
   });
 
+  const report = params.get('report') === '1' ? startReport(route, pixelRatio, show, (result) => showReport(root, result), params) : null;
   let frame = 0;
   let windowStart = performance.now();
+  let last = windowStart;
   let fps = 0;
+  let measuring = report !== null;
   const tick = (now: number): void => {
     controls?.update();
     route.render();
+    if (measuring) measuring = report?.frame(now - last) ?? false;
+    last = now;
     const stats = route.frameStats();
     if (frame === 2) {
       window.__lisbonProof = { view, backend: route.backend, ...stats, bytes: assets.bytes };
@@ -98,7 +105,7 @@ async function start(): Promise<void> {
     if (frame % 60 === 0) {
       if (frame > 0) fps = 60_000 / (now - windowStart);
       windowStart = now;
-      hud.textContent = `${route.backend} · ${fps ? `${fps.toFixed(0)} fps · ` : ''}${stats.drawCalls} draws · ${(stats.triangles / 1e6).toFixed(2)} M tris · ${megabytes(assets.bytes)} MB assets`;
+      hud.textContent = `${measuring ? `measuring ${view} · ` : ''}${route.backend} · ${fps ? `${fps.toFixed(0)} fps · ` : ''}${stats.drawCalls} draws · ${(stats.triangles / 1e6).toFixed(2)} M tris · ${megabytes(assets.bytes)} MB assets`;
     }
     frame++;
     requestAnimationFrame(tick);
@@ -113,7 +120,7 @@ function megabytes(bytes: Record<string, number>): string {
 function mountHud(parent: HTMLElement, choose: (view: ProofView) => void): HTMLElement {
   const panel = document.createElement('nav');
   panel.className = 'proof-hud';
-  const labels: Record<ProofView, string> = { chase: '1 Street', facade: '2 Façade', establish: '3 Wide' };
+  const labels: Record<ProofView, string> = { chase: '1 Street', carside: '2 Car side', facade: '3 Façade', establish: '4 Wide' };
   for (const view of PROOF_VIEWS) {
     const button = document.createElement('button');
     button.type = 'button';

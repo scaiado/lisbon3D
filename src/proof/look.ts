@@ -15,11 +15,15 @@ export const PROOF_LOOK = {
   sunDirection: [0.100, 0.559, -0.823] as const,
   sunColor: '#ffd29a',
   sunIntensity: 4.6,
-  /** Blue-violet sky fill and warm ochre bounce, so shade is coloured, never grey. */
-  hemisphereSky: '#7d86c4',
-  hemisphereGround: '#c98a52',
-  hemisphereIntensity: 0.8,
-  environmentIntensity: 0.35,
+  /**
+   * Cool blue-violet sky fill against the warm sun (the reference frame's shade colour), with only a muted
+   * bounce from the ground, so shade reads as cool lilac, never grey or orange. The painted sky's warm horizon
+   * also lights the scene through the environment, so that stays low.
+   */
+  hemisphereSky: '#6d70d0',
+  hemisphereGround: '#9c7a72',
+  hemisphereIntensity: 1.05,
+  environmentIntensity: 0.22,
   /** Cool multiply on the painted far shore and bridge so they separate from the warm horizon haze. */
   cardTint: '#c9bdd0',
   haze: { color: '#f0cfa2', near: 60, far: 2600 },

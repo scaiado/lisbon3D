@@ -33,3 +33,6 @@ archive/godot-v0/.godot/
 archive/godot-v0/export_presets.cfg
 archive/godot-v0/builds/
 archive/godot-v0/data/lisbon_slice.json
+
+# Static proof build for measuring on other machines (npm run build:perf)
+!/perf/dist/

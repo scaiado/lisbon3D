@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "check": "npm run typecheck && npm run build && npm run test",
-    "assets:proof": "node tools/optimize-proof-assets.mjs"
+    "assets:proof": "node tools/optimize-proof-assets.mjs",
+    "build:perf": "vite build --mode perf && node tools/link-perf-assets.mjs"
   },
   "dependencies": {
     "three": "0.186.1"

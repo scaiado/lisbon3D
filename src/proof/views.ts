@@ -1,8 +1,8 @@
 import { type Object3D, type PerspectiveCamera, Vector3 } from 'three';
 import { groundHeight } from './assets';
 
-export type ProofView = 'chase' | 'facade' | 'establish';
-export const PROOF_VIEWS: readonly ProofView[] = ['chase', 'facade', 'establish'];
+export type ProofView = 'chase' | 'carside' | 'facade' | 'establish';
+export const PROOF_VIEWS: readonly ProofView[] = ['chase', 'carside', 'facade', 'establish'];
 
 export interface ViewPose {
   position: Vector3;
@@ -19,7 +19,8 @@ export const CAR_SPOT = { x: 1.1, z: -7 } as const;
  * Places the microcar on the slope: height from the street surface under each axle, pitch from their difference.
  */
 export function placeMicrocar(car: Object3D, street: Object3D): void {
-  const wheelbase = 1.7;
+  // Axle spacing of art/blender/lisbon/microcar.py; only the pitch depends on it.
+  const wheelbase = 1.6;
   const rear = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z + wheelbase / 2);
   const front = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z - wheelbase / 2);
   car.position.set(CAR_SPOT.x, (rear + front) / 2, CAR_SPOT.z);
@@ -36,6 +37,13 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
     const target = car.position.clone().add(new Vector3(-1.1, -6.5, -40));
     return { position, target, fov: 55, focus: 6 };
   }
+  if (view === 'carside') {
+    // Side profile from the far pavement at waist height (the Bica is only 6 m wide, so the camera cannot back
+    // further off), with the right-hand façades behind the car.
+    const position = car.position.clone().add(new Vector3(-3.7, 0.85, 0.1));
+    const target = car.position.clone().add(new Vector3(0, 0.9, 0.1));
+    return { position, target, fov: 44, focus: 3.7 };
+  }
   const fixed = FIXED_VIEWS[view];
   return { position: new Vector3(...fixed.position), target: new Vector3(...fixed.target), fov: fixed.fov, focus: fixed.focus };
 }
@@ -44,7 +52,7 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
  * The façade and establishing views match the Blender target renders (art/blender/lisbon/scene_setup.py VIEWS,
  * converted from Blender Z-up to glTF Y-up: x, z, -y), so in-browser and Blender images compare one to one.
  */
-const FIXED_VIEWS: Record<Exclude<ProofView, 'chase'>, { position: Vec3; target: Vec3; fov: number; focus: number }> = {
+const FIXED_VIEWS: Record<Exclude<ProofView, 'chase' | 'carside'>, { position: Vec3; target: Vec3; fov: number; focus: number }> = {
   facade: { position: [1.3, 0.41, -9.2], target: [-3.1, 1.16, -14.6], fov: 50, focus: 7 },
   establish: { position: [9, 26, 16], target: [-1, -4, -90], fov: 45, focus: 90 }
 };
