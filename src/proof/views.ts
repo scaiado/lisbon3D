@@ -46,7 +46,7 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
  */
 const FIXED_VIEWS: Record<Exclude<ProofView, 'chase'>, { position: Vec3; target: Vec3; fov: number; focus: number }> = {
   facade: { position: [1.3, 0.41, -9.2], target: [-3.1, 1.16, -14.6], fov: 50, focus: 7 },
-  establish: { position: [9, 26, 16], target: [-1, -18, -90], fov: 45, focus: 90 }
+  establish: { position: [9, 26, 16], target: [-1, -4, -90], fov: 45, focus: 90 }
 };
 
 type Vec3 = [number, number, number];

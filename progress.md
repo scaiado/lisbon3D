@@ -1,5 +1,23 @@
 # Progress
 
+## Stage 2b — Visual proof, direction C (2026-10-21) — awaiting review
+- Blender: kAI's Mac has Blender 5.2.0 LTS (macOS 26.6.2, arm64), and headless mode works. It runs over Remote
+  Control in a separate clone (`LAB/lisbon3d-proof`). Nothing was installed and `LAB/Lisbon3D` was not touched.
+- Kit as reproducible Blender Python (`art/blender/`):
+  - 21 procedural textures (numpy, all ours)
+  - façade and roof kits with real relief
+  - the stepped Bica street with calçada, kerbs, setts and rails
+  - 12 authored buildings in two families plus 22 quieter variants
+  - the stepped funicular, mid-ground blocks, the river, painted far-shore and bridge cards
+  - the invented pastry-delivery microcar
+  - an AO bake into vertex colour
+- Engine: `proof.html` with sun, coloured fill, painted sky, haze, ACES tone mapping and three review cameras.
+  The assets are compressed with glTF-Transform 4.5.1 (new dev dependency, pinned).
+- Results: in-browser captures in `art/renders/browser/` and Blender target renders in `art/renders/`.
+  Numbers and known gaps are in `docs/visual-proof.md`.
+- Stage 2a: three AI concept frames, reviewed (the first set was rejected for a real-car likeness), logged in
+  `art/style-frames/LEDGER.md`. kAI chose C.
+
 ## Plan revision 3 — visual-first (2026-10-20) — awaiting review
 - kAI corrected the visual brief: the Stage 1 look-test is primitive geometry and does not address the
   product problem. The greybox car-and-camera stage is paused.

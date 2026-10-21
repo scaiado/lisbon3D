@@ -2,22 +2,16 @@ Lisbon3D TODO
 =============
 
 Now (needs kAI)
-- [ ] Review plan.md revision 3 (visual-first) and answer §8: sequence + proof scene, Blender install, AI imagery policy, download budget, artist fallback.
+- [ ] Review the visual proof (art/renders/browser/, proof.html) against plan.md §5 criteria; approve or redirect.
+- [ ] Open proof.html on the M4 in Chrome, Safari and Firefox and note the HUD frame rate per view.
 - [ ] Rotate the exposed MapTiler key in the MapTiler account.
 - [ ] Do not merge PR #1 to production; it is a technical benchmark only.
 
-Stage 2a — visual direction (after approval)
-- [ ] Art-direction sheet, palette and material swatches.
-- [ ] Reference notes for Bica / Calçada do Combro / Rua do Loreto (proportions, materials, landmarks).
-- [ ] 2–3 style frames of the proof scene; kAI picks one.
-
-Stage 2b — visual proof + asset pipeline
-- [ ] Install Blender 5.2.2 (bpy) and glTF/KTX tooling (versions rechecked).
-- [ ] Blender build scripts for the façade, roof, ground and prop kit (art/).
-- [ ] ~14 authored building recipes; Bica funicular; hero microcar; props; backdrop cards.
-- [ ] Illustrated textures with baked light; asset ledger.
-- [ ] glTF → meshopt + KTX2; load in three.js; three in-browser review images (+ optional Cycles targets).
-- [ ] Re-run the renderer benchmark on the proof scene (Chrome, Safari, Firefox on the M4).
+Stage 2b follow-ups (if the direction is approved)
+- [ ] Mid-ground: varied roofs and eaves, less visible tiling; halve the plaster normal strength.
+- [ ] Shade toward the STYLE-C blue-violet; bridge fully in the wide view.
+- [ ] Street life: stylised people, cats, gulls, café props.
+- [ ] KTX2 textures on a machine with toktx; re-run the renderer benchmark on the proof scene.
 
 Later stages (see plan.md §7)
 - [ ] Stage 3: car + camera feel in the proof street.

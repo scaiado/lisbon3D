@@ -18,7 +18,7 @@ VIEWS = {
     # name: (camera position, look-at target, vertical fov degrees)
     'view1_chase': ((0.35, -3.2, 2.25), (0.0, 40.0, -5.5), 50.0),
     'view2_facade': ((1.3, 9.2, S.pave_z(9.2) + 1.55), (-3.1, 14.6, S.pave_z(14.6) + 3.2), 50.0),
-    'view3_establishing': ((9.0, -16.0, 26.0), (-1.0, 90.0, -18.0), 45.0),
+    'view3_establishing': ((9.0, -16.0, 26.0), (-1.0, 90.0, -4.0), 45.0),
 }
 
 

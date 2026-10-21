@@ -1,6 +1,7 @@
-import { Box3, type Color, Mesh, MeshBasicMaterial, type Material, type Object3D, Raycaster, type Texture, Vector3 } from 'three';
+import { Box3, Color, Mesh, MeshBasicMaterial, type Material, type Object3D, Raycaster, type Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { PROOF_LOOK } from './look';
 
 export const PROOF_ASSETS = {
   street: 'assets/proof/bica.glb',
@@ -41,7 +42,8 @@ function prepare(root: Object3D): void {
     const backdrop = isBackdrop(object);
     object.castShadow = !backdrop;
     object.receiveShadow = !backdrop;
-    if (backdrop) object.material = materials(object).map(toPaintedCard);
+    // Keep a single material single: an array without geometry groups draws nothing.
+    if (backdrop) object.material = Array.isArray(object.material) ? object.material.map(toPaintedCard) : toPaintedCard(object.material);
   });
 }
 
@@ -53,7 +55,7 @@ function toPaintedCard(material: Material): Material {
   // Blender exports its unlit cards as emission, so the painting may arrive as the emissive map.
   const painted = (key: 'map' | 'emissiveMap'): Texture | null => (key in material ? (material as unknown as Record<string, Texture | null>)[key] ?? null : null);
   const map = painted('map') ?? painted('emissiveMap');
-  const color = map ? undefined : 'color' in material ? (material.color as Color) : undefined;
+  const color = map ? new Color(PROOF_LOOK.cardTint) : 'color' in material ? (material.color as Color) : undefined;
   const card = new MeshBasicMaterial({ name: material.name, map, color, transparent: true, alphaTest: 0.35, fog: false, depthWrite: false });
   material.dispose();
   return card;

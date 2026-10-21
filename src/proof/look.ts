@@ -20,6 +20,8 @@ export const PROOF_LOOK = {
   hemisphereGround: '#c98a52',
   hemisphereIntensity: 0.8,
   environmentIntensity: 0.35,
+  /** Cool multiply on the painted far shore and bridge so they separate from the warm horizon haze. */
+  cardTint: '#c9bdd0',
   haze: { color: '#f0cfa2', near: 60, far: 2600 },
   shadowMapSize: 4096,
   sky: {

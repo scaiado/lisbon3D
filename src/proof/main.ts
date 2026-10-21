@@ -84,14 +84,21 @@ async function start(): Promise<void> {
   });
 
   let frame = 0;
-  const tick = (): void => {
+  let windowStart = performance.now();
+  let fps = 0;
+  const tick = (now: number): void => {
     controls?.update();
     route.render();
     const stats = route.frameStats();
     if (frame === 2) {
       window.__lisbonProof = { view, backend: route.backend, ...stats, bytes: assets.bytes };
-      hud.textContent = `${route.backend} · ${stats.drawCalls} draws · ${(stats.triangles / 1e6).toFixed(2)} M tris · ${megabytes(assets.bytes)} MB assets`;
       document.body.dataset['ready'] = 'true';
+    }
+    // Frame rate over the last 60 frames: only meaningful on real hardware, never in headless tests.
+    if (frame % 60 === 0) {
+      if (frame > 0) fps = 60_000 / (now - windowStart);
+      windowStart = now;
+      hud.textContent = `${route.backend} · ${fps ? `${fps.toFixed(0)} fps · ` : ''}${stats.drawCalls} draws · ${(stats.triangles / 1e6).toFixed(2)} M tris · ${megabytes(assets.bytes)} MB assets`;
     }
     frame++;
     requestAnimationFrame(tick);
