@@ -23,7 +23,7 @@ export const CAR_SPOT = { x: 0.85, z: -7 } as const;
  */
 export function placeMicrocar(car: Object3D, street: Object3D): void {
   // Axle spacing of art/blender/lisbon/microcar.py; only the pitch depends on it.
-  const wheelbase = 2.36;
+  const wheelbase = 2.4;
   const rear = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z + wheelbase / 2);
   const front = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z - wheelbase / 2);
   car.position.set(CAR_SPOT.x, (rear + front) / 2, CAR_SPOT.z);
@@ -42,13 +42,13 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
   }
   if (view === 'carfront') {
     // Front three-quarter from down the hill on the left, at about eye height above the lower street.
-    const position = car.position.clone().add(new Vector3(-2.7, 0.95, -4.8));
+    const position = car.position.clone().add(new Vector3(-2.9, 0.7, -5.9));
     const target = car.position.clone().add(new Vector3(0, 0.6, 0));
-    return { position, target, fov: 42, focus: 5.5 };
+    return { position, target, fov: 42, focus: 6.5 };
   }
   if (view === 'carrear') {
     // Rear view from up the hill, a little left of the car's centreline so the hatch and one side both read.
-    const position = car.position.clone().add(new Vector3(-0.9, 2.1, 5.4));
+    const position = car.position.clone().add(new Vector3(-0.9, 2.2, 6.0));
     const target = car.position.clone().add(new Vector3(0, 0.7, 0));
     return { position, target, fov: 40, focus: 5.5 };
   }

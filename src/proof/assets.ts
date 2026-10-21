@@ -1,4 +1,4 @@
-import { Box3, Color, Mesh, MeshBasicMaterial, type Material, type Object3D, Raycaster, type Texture, Vector3 } from 'three';
+import { Box3, Color, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, type Material, type Object3D, Raycaster, type Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { PROOF_LOOK } from './look';
@@ -44,7 +44,20 @@ function prepare(root: Object3D): void {
     object.receiveShadow = !backdrop;
     // Keep a single material single: an array without geometry groups draws nothing.
     if (backdrop) object.material = Array.isArray(object.material) ? object.material.map(toPaintedCard) : toPaintedCard(object.material);
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) softenClearcoat(material);
   });
+}
+
+/**
+ * Glossy car paint turns the low sun into a blown-out bloom spot on the car's domed roof. A satin finish keeps the
+ * painted, storybook read of direction C.
+ */
+function softenClearcoat(material: Material): void {
+  if (material instanceof MeshPhysicalMaterial && material.clearcoat > 0) {
+    material.roughness = Math.max(material.roughness, 0.5);
+    material.clearcoat = Math.min(material.clearcoat, 0.4);
+    material.clearcoatRoughness = Math.max(material.clearcoatRoughness, 0.45);
+  }
 }
 
 function isBackdrop(mesh: Mesh): boolean {

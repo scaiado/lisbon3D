@@ -2,9 +2,9 @@
   "view": "carside",
   "backend": "webgl2",
   "drawCalls": 256,
-  "triangles": 4317219,
+  "triangles": 4354951,
   "bytes": {
     "street": 19447608,
-    "microcar": 150496
+    "microcar": 261204
   }
 }
