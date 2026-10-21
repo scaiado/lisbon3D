@@ -2,15 +2,15 @@ Lisbon3D TODO
 =============
 
 Now (needs kAI)
-- [ ] Review the visual proof (art/renders/browser/, proof.html) against plan.md §5 criteria; approve or redirect.
-- [ ] Open proof.html on the M4 in Chrome, Safari and Firefox and note the HUD frame rate per view.
+- [ ] Review visual proof pass 2 (art/renders/browser/, four views incl. carside); approve or redirect.
+- [ ] Safari on the M4: approve the macOS automation prompt, or open perf/dist proof.html?report=1 in Safari
+      full screen on the built-in display (see perf/README.md).
 - [ ] Rotate the exposed MapTiler key in the MapTiler account.
 - [ ] Do not merge PR #1 to production; it is a technical benchmark only.
 
 Stage 2b follow-ups (if the direction is approved)
-- [ ] Mid-ground: varied roofs and eaves, less visible tiling; halve the plaster normal strength.
-- [ ] Shade toward the STYLE-C blue-violet; bridge fully in the wide view.
-- [ ] Street life: stylised people, cats, gulls, café props.
+- [ ] Performance: resolution scaling (dynamic pixel ratio) and cheaper AO/bloom before touching the art.
+- [ ] Wide view in the browser: stronger bridge card, less visible river tiling, more depth in the far-shore haze.
 - [ ] KTX2 textures on a machine with toktx; re-run the renderer benchmark on the proof scene.
 
 Later stages (see plan.md §7)

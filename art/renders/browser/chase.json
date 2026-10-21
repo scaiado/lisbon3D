@@ -1,10 +1,10 @@
 {
   "view": "chase",
   "backend": "webgl2",
-  "drawCalls": 225,
-  "triangles": 3867071,
+  "drawCalls": 285,
+  "triangles": 4364095,
   "bytes": {
-    "street": 17758032,
-    "microcar": 79648
+    "street": 19447608,
+    "microcar": 139236
   }
 }

@@ -1,6 +1,16 @@
 # Progress
 
-## Stage 2b — Visual proof, direction C (2026-10-21) — awaiting review
+## Stage 2b pass 2 — refinement after review (2026-10-21) — awaiting review
+- kAI's notes: varied mid-ground roofs with depth, less repetition, cooler blue-violet shade with warm sun, a
+  composed wide view, a microcar that reads as a small charming car (plus a side profile), a few people and animals.
+- Blender (on kAI's Mac): new lofted microcar with arches, glass and a roof-rack cake tin; mid-ground of separate
+  buildings with hip, gable, mansard and terrace roofs and a church; calmer textures with world-space variation;
+  cooler AO; people, cats, pigeons, gulls; wide camera recomposed toward the bridge.
+- Engine: `carside` view, blue-violet fill, `?report=1` measurement mode, static `perf/dist` bundle (no install).
+- Download 19.6 MB. M4 Chrome: 52–60 fps at the default 1.5 pixel ratio, 21–30 fps at full Retina; cost is per
+  pixel, not geometry. Safari not yet measured. Details: `docs/visual-proof.md`, `perf/results/README.md`.
+
+## Stage 2b — Visual proof, direction C (2026-10-21) — pass 1 reviewed
 - Blender: kAI's Mac has Blender 5.2.0 LTS (macOS 26.6.2, arm64), and headless mode works. It runs over Remote
   Control in a separate clone (`LAB/lisbon3d-proof`). Nothing was installed and `LAB/Lisbon3D` was not touched.
 - Kit as reproducible Blender Python (`art/blender/`):

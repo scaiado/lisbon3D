@@ -10,9 +10,13 @@ npm ci
 npm run dev            # then open http://localhost:5173/proof.html
 ```
 
-- `?view=chase|facade|establish`, or keys 1–3 and the buttons: the three review views. `?view=free` adds orbit controls.
+Without installing anything: `cd perf/dist && python3 -m http.server 8080` and open
+`http://localhost:8080/proof.html` (see `perf/README.md`; rebuild with `npm run build:perf`).
+
+- `?view=chase|carside|facade|establish`, or keys 1–4 and the buttons: the review views. `?view=free` adds orbit controls.
 - `?renderer=webgl` (default here), `webgpu` or `webgpu-gl2`; `?shadows=0`, `?ao=0`, `?bloom=0`, `?aa=0`; `?dof=1` turns depth of field on.
 - `?dpr=1.5` caps the pixel ratio; `?clean` hides the HUD.
+- `?report=1` measures every view (3 s warm-up + 10 s each), shows copyable JSON and logs each view as `GET ./__perf?…`.
 - The HUD shows the backend, frame rate (real hardware only), draw calls, rendered triangles (all passes) and asset megabytes.
 
 ## Pipeline
@@ -64,3 +68,52 @@ reassess it at Stage 4 from these numbers.
 - Shade is warm-dark rather than the blue-violet of the style frame.
 - The bridge is cut by the right edge of the wide view.
 - No people, cats, gulls or street props beyond pots, laundry and signs yet.
+
+## Pass 2 (2026-10-21), after kAI's review of pass 1
+
+kAI kept the façade detail and asked for: varied mid-ground roofs with real depth and less repetition, the
+reference's cooler blue-violet shade with warm sun, a composed wide view, a microcar that reads unmistakably as a
+small charming car (with a side-profile view), and a few people and animals. Nothing is approved and the district
+is not expanded.
+
+- **Microcar** (`microcar.py`): a lofted two-door body with a sloping bonnet, cut wheel arches with flares, raked
+  windscreen, side and rear windows, round headlamps, grille, bumpers and tail lamps. The pastry branding is an
+  accessory: a cake tin on a roof rack and a door badge. Wheelbase 1.70 m, wheel radius 0.27 m, 2.65 m long.
+- **Mid-ground** (`backdrop.py`): blocks of separate buildings with hip, gable, mansard-with-dormer and terrace
+  roofs, cornices, setbacks and chimneys; a two-tower church; a riverfront row with trees. One shared material
+  (`mid_wall`) tinted per building through COLOR_0.
+- **Repetition:** roof texture repeat about 4×7 m with patches; calmer plaster at half normal strength; world-space
+  stains, roof colour drift and rising damp baked into COLOR_0.
+- **Shade:** cooler AO tint and fill in Blender; in the engine a blue-violet hemisphere fill (`#6d70d0`) with a muted
+  ground bounce and a lower warm environment, sun unchanged.
+- **Wide view:** camera moved west and up, aimed at the bridge (Blender (-30, -40, 48) → (115, 320, -49), 40°).
+- **Life** (`life.py`): a grandmother with shopping, two walkers, a ginger and a dark cat, pigeons, gulls.
+- **New view:** `carside`, from the far pavement (the street is 6 m wide).
+
+| | Pass 1 | Pass 2 |
+|---|---|---|
+| Scene triangles | 0.96 M | 1.08 M |
+| Microcar triangles | 5,976 | 10,352 |
+| Download (scene + car) | 17.8 MB + 0.08 MB | **19.45 MB + 0.14 MB** |
+| Draw calls per frame (all passes) | 201–225 | 241–285 |
+
+### Frame rate on the M4 (Chrome 155, built-in 60 Hz display, AC power)
+
+Full numbers and conditions are in `perf/results/README.md`.
+
+| Pixel ratio | chase | carside | facade | establish |
+|---|---|---|---|---|
+| 1.5 (default cap, 2565×1668) | 59.7 fps | 52.1 | 54.4 | 55.3 |
+| 2 (full Retina, 3420×2224) | 26.6 fps | 20.6 | 25.2 | 29.7 |
+
+At 1.5 the non-chase views miss vsync about one frame in twenty (1% lows about 29 fps). Draws and triangles are
+identical at both ratios while the frame rate halves, so the cost is per pixel (AO, bloom, shadow filtering,
+antialiasing at high resolution), not geometry. Optimise resolution scaling and the full-screen passes first.
+Safari 26.6.2 is not measured yet (needs someone at the Mac); Firefox is not installed.
+
+### Known gaps (pass 2)
+
+- In the browser the bridge card is fainter than in the Blender target, and the river's ripple texture repeats
+  visibly in the wide view.
+- The haze turns the far shore into a flat lilac band; the Blender target keeps more depth.
+- One headlamp catches a strong specular flare in the car side view.
