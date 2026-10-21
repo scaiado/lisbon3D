@@ -11,7 +11,7 @@ import { PROOF_VIEWS, applyPose, placeMicrocar, viewPose, type ProofView } from 
  * Stage 2b visual proof: the Blender-built top of the Bica, lit in-engine, seen from the three review views.
  *
  *   ?view=chase|facade|establish   review camera (default chase); ?view=free adds orbit controls
- *   ?renderer=webgl|webgpu|webgpu-gl2 and the effect switches work as in the renderer spike.
+ *   ?renderer=webgl|webgpu|webgpu-gl2 and the effect switches work as in the renderer spike; ?dof=1 turns depth of field on.
  *   The proof defaults to the classic WebGL 2 route, the first-class path until the renderer is decided.
  */
 
@@ -28,6 +28,8 @@ async function start(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const options = readOptions();
   if (!params.has('renderer')) options.route = 'webgl';
+  // Direction C wants crisp storybook detail, so depth of field is opt-in here (?dof=1).
+  options.effects.dof = params.get('dof') === '1';
   const requested = params.get('view');
   const free = requested === 'free';
   let view: ProofView = PROOF_VIEWS.includes(requested as ProofView) ? (requested as ProofView) : 'chase';
@@ -60,7 +62,7 @@ async function start(): Promise<void> {
   const controls = free ? new OrbitControls(camera, route.canvas) : null;
   const show = (next: ProofView): void => {
     view = next;
-    const pose = viewPose(view, assets.street, assets.microcar);
+    const pose = viewPose(view, assets.microcar);
     applyPose(camera, pose);
     controls?.target.copy(pose.target);
     route.setFocusDistance(pose.focus);

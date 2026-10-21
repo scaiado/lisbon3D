@@ -12,6 +12,8 @@ const built = existsSync('public/assets/proof/bica.glb') && existsSync('public/a
 test.describe('visual proof', () => {
   test.skip(!built, 'proof assets not built yet (art/exports → npm run assets:proof)');
   test.use({ viewport: { width: 1920, height: 1080 } });
+  // Software rendering of the full scene at 1080p is slow; this is a look check, not a speed check.
+  test.setTimeout(300_000);
 
   for (const view of VIEWS) {
     test(`renders the ${view} view`, async ({ page }) => {

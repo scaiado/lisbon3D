@@ -3,8 +3,8 @@
  * Values are tuned by eye against the reference frame, not physically derived.
  */
 export const PROOF_LOOK = {
-  /** Direction toward the sun: low, ahead-right of a camera looking down the Bica (-Z) toward the river. */
-  sunDirection: [0.55, 0.3, -0.78] as const,
+  /** Toward the sun: low (17°), ahead-right of the downhill view; same as TO_SUN in art/blender/lisbon/scene_setup.py. */
+  sunDirection: [0.72, 0.306, -0.62] as const,
   sunColor: '#ffd7a0',
   sunIntensity: 3.1,
   /** Blue-violet sky fill and warm ochre bounce, so shade is coloured, never grey. */
@@ -12,7 +12,7 @@ export const PROOF_LOOK = {
   hemisphereGround: '#c98a52',
   hemisphereIntensity: 1.15,
   environmentIntensity: 0.35,
-  haze: { color: '#f0cfa2', near: 45, far: 900 },
+  haze: { color: '#f0cfa2', near: 60, far: 2600 },
   shadowMapSize: 4096,
   sky: {
     zenith: '#6f8fb8',

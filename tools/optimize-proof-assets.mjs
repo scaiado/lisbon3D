@@ -1,6 +1,7 @@
 // Compresses the raw Blender exports (art/exports/*.glb) into the copies the game downloads
-// (public/assets/proof/*.glb): dedupe, weld, meshopt geometry, WebP textures capped at 2048 px.
-// Node names are kept (no flatten/join), because the proof views look buildings up by name.
+// (public/assets/proof/*.glb): dedupe, join primitives that share a material (one draw per material instead
+// of one per building and material), weld, meshopt geometry, WebP textures capped at 2048 px.
+// Joining merges node names; the engine finds backdrop cards by material name instead.
 // KTX2 needs KTX-Software's toktx, which this environment doesn't have; WebP is the documented fallback.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
@@ -14,6 +15,8 @@ mkdirSync(target, { recursive: true });
 
 const steps = [
   ['dedup'],
+  ['flatten'],
+  ['join'],
   ['prune'],
   ['weld'],
   ['resize', '--width', '2048', '--height', '2048'],

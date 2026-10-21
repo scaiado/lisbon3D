@@ -12,6 +12,7 @@ Options after `--`:
 
 Writes art/blender/out/proof.blend, art/exports/bica.glb and art/exports/microcar.glb.
 """
+import math
 import os
 import sys
 import time
@@ -23,6 +24,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 import bpy  # noqa: E402
 
 from lisbon import textures, recipes, buildings, street, bake, scene_setup, geo  # noqa: E402
+from lisbon import funicular, backdrop, microcar  # noqa: E402
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 
@@ -103,17 +105,46 @@ def main():
         objs.append(obj)
         log('%s: %d tris, %.1fs' % (obj.name, geo.tri_count(obj), time.time() - t))
 
+    if not only:
+        t = time.time()
+        objs.append(funicular.build(scene_c))
+        far = backdrop.build(scene_c)
+        log('funicular + mid-ground + backdrop: %.1fs' % (time.time() - t))
+    else:
+        far = []
+    cards = [o for o in far if o.name.startswith('backdrop')]
+    objs.extend(o for o in far if o not in cards)
+
     if not opt('--no-bake'):
         bake.bake_ao(objs, log=log)
     else:
         for o in objs:
             bake.fill_white(o)
+    for o in cards:
+        bake.fill_white(o)
+    objs.extend(cards)
 
     tris, prims = stats(objs)
     log('scene: %d objects, %d primitives (mesh x material), %d triangles' % (len(objs), prims, tris))
 
     if not opt('--no-export'):
         export(objs, os.path.join(EXPORTS, 'bica.glb'))
+
+    # hero microcar: built and baked on its own, far above the street so the street doesn't occlude it
+    car_c = coll('microcar')
+    car = microcar.build(car_c)
+    car.location = (0.0, 0.0, 500.0)
+    if not opt('--no-bake'):
+        bake.bake_ao([car], log=log)
+    else:
+        bake.fill_white(car)
+    car.location = (0.0, 0.0, 0.0)
+    log('microcar: %d tris' % geo.tri_count(car))
+    if not opt('--no-export'):
+        export([car], os.path.join(EXPORTS, 'microcar.glb'))
+    # park it where the engine's chase view puts it, for the Cycles target renders
+    car.location = (1.1, 7.0, street.road_z(7.0))
+    car.rotation_euler = (-math.atan(street.SLOPE), 0.0, 0.0)
 
     rv = opt('--render')
     if rv:

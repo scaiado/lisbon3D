@@ -1,4 +1,4 @@
-import { Box3, type Object3D, type PerspectiveCamera, Vector3 } from 'three';
+import { type Object3D, type PerspectiveCamera, Vector3 } from 'three';
 import { groundHeight } from './assets';
 
 export type ProofView = 'chase' | 'facade' | 'establish';
@@ -27,55 +27,29 @@ export function placeMicrocar(car: Object3D, street: Object3D): void {
   car.rotation.set(Math.atan2(front - rear, wheelbase), 0, 0);
 }
 
-/** The three review views from plan.md §5, derived from the actual exported geometry. */
-export function viewPose(view: ProofView, street: Object3D, car: Object3D): ViewPose {
+/** The three review views from plan.md §5. The chase view follows the parked microcar. */
+export function viewPose(view: ProofView, car: Object3D): ViewPose {
   if (view === 'chase') {
-    const position = car.position.clone().add(new Vector3(0, 2.1, 5.2));
-    const target = car.position.clone().add(new Vector3(0, -2.5, -26));
-    return { position, target, fov: 55, focus: 5.6 };
+    // Camera on the street centreline behind and above the car, so the car sits right of centre and the
+    // street, funicular and river stay open down the middle, as in the style frame.
+    const position = car.position.clone().add(new Vector3(-1.1, 2.6, 5.6));
+    const target = car.position.clone().add(new Vector3(-1.1, -6.5, -40));
+    return { position, target, fov: 55, focus: 6 };
   }
-  if (view === 'facade') return facadePose(street);
-  const bounds = namedChildren(street, 'building').length > 0 ? groupBounds(street, 'building') : new Box3().setFromObject(street);
-  const top = groundHeight(street, 0, 0);
-  const position = new Vector3(9, Math.max(bounds.max.y + 6, top + 26), 16);
-  const target = new Vector3(0, top - 30, -150);
-  return { position, target, fov: 50, focus: 60 };
+  const fixed = FIXED_VIEWS[view];
+  return { position: new Vector3(...fixed.position), target: new Vector3(...fixed.target), fov: fixed.fov, focus: fixed.focus };
 }
 
-/** Stands on the far pavement, three-quarter view of the left-hand building nearest 25 m down the street. */
-function facadePose(street: Object3D): ViewPose {
-  const buildings = namedChildren(street, 'building');
-  const wanted = -25;
-  let best: Box3 | null = null;
-  for (const building of buildings) {
-    const box = new Box3().setFromObject(building);
-    const center = box.getCenter(new Vector3());
-    if (center.x >= 0) continue;
-    const bestCenter = best?.getCenter(new Vector3());
-    if (!bestCenter || Math.abs(center.z - wanted) < Math.abs(bestCenter.z - wanted)) best = box;
-  }
-  const face = best ? new Vector3(best.max.x, 0, best.getCenter(new Vector3()).z) : new Vector3(-3, 0, wanted);
-  const across = face.x + 5.5;
-  const standZ = face.z + 4;
-  const eye = groundHeight(street, across, standZ) + 1.6;
-  const target = new Vector3(face.x, groundHeight(street, face.x + 0.5, face.z) + 4.2, face.z - 1);
-  const position = new Vector3(across, eye, standZ);
-  return { position, target, fov: 50, focus: position.distanceTo(target) };
-}
+/**
+ * The façade and establishing views match the Blender target renders (art/blender/lisbon/scene_setup.py VIEWS,
+ * converted from Blender Z-up to glTF Y-up: x, z, -y), so in-browser and Blender images compare one to one.
+ */
+const FIXED_VIEWS: Record<Exclude<ProofView, 'chase'>, { position: Vec3; target: Vec3; fov: number; focus: number }> = {
+  facade: { position: [1.3, 0.41, -9.2], target: [-3.1, 1.16, -14.6], fov: 50, focus: 7 },
+  establish: { position: [9, 26, 16], target: [-1, -18, -90], fov: 45, focus: 90 }
+};
 
-function namedChildren(root: Object3D, prefix: string): Object3D[] {
-  const found: Object3D[] = [];
-  root.traverse((object) => {
-    if (object.name.toLowerCase().startsWith(prefix) && !object.parent?.name.toLowerCase().startsWith(prefix)) found.push(object);
-  });
-  return found;
-}
-
-function groupBounds(root: Object3D, prefix: string): Box3 {
-  const box = new Box3();
-  for (const child of namedChildren(root, prefix)) box.expandByObject(child);
-  return box;
-}
+type Vec3 = [number, number, number];
 
 export function applyPose(camera: PerspectiveCamera, pose: ViewPose): void {
   camera.position.copy(pose.position);
