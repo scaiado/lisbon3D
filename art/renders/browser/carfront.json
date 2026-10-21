@@ -1,10 +1,10 @@
 {
   "view": "carfront",
   "backend": "webgl2",
-  "drawCalls": 254,
-  "triangles": 4349359,
+  "drawCalls": 266,
+  "triangles": 4342639,
   "bytes": {
     "street": 19447608,
-    "microcar": 261204
+    "microcar": 302716
   }
 }
