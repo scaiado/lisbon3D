@@ -74,16 +74,19 @@ DEF = {
     'funicular_dark': dict(tex='paint_metal', tint='#3A3634', tile=2.0, rough=0.6),
     'lamp_glow': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
     # microcar
-    'car_teal': dict(tex=None, color='#2A9C9A', rough=0.22, clearcoat=True),
+    'car_teal': dict(tex=None, color='#3A9E9A', rough=0.25, clearcoat=True),
     'car_box': dict(tex='pastry_box', tile=1.0, rough=0.4),
     'car_cream': dict(tex=None, color='#F1E6CC', rough=0.4),
-    'car_tyre': dict(tex=None, color='#252322', rough=0.85),
+    'car_tyre': dict(tex=None, color='#2A2827', rough=0.85),
     'car_chrome': dict(tex=None, color='#D9D6CF', rough=0.15, metal=1.0),
-    'car_glass': dict(tex=None, color='#1F2E36', rough=0.05),
-    'car_lamp': dict(tex=None, color='#FFF1D2', rough=0.1, emit='#FFE7B0'),
-    'car_tail': dict(tex=None, color='#C2362B', rough=0.2, emit='#7A1A12'),
-    'car_trim': dict(tex=None, color='#2B3033', rough=0.6),
-    'car_seat': dict(tex=None, color='#8A4A2E', rough=0.7),
+    'car_alloy': dict(tex=None, color='#B8BCC0', rough=0.3, metal=0.85),
+    'car_glass': dict(tex=None, color='#22323C', rough=0.05, alpha=0.62),
+    'car_lamp': dict(tex=None, color='#F4F1EA', rough=0.08, emit='#FFE7B0'),
+    'car_tail': dict(tex=None, color='#B8302A', rough=0.15, emit='#5A140E'),
+    'car_amber': dict(tex=None, color='#E39A2E', rough=0.15),
+    'car_trim': dict(tex=None, color='#2A2E31', rough=0.65),
+    'car_plate': dict(tex='plate', tile=1.0, rough=0.4),
+    'car_seat': dict(tex=None, color='#4A4644', rough=0.85),
     # mid-ground and backdrop
     'far_ochre': dict(tex='far_facade', tint='#D9A14E', tile=3.2, rough=0.95),
     'far_rose': dict(tex='far_facade', tint='#D98E7A', tile=3.2, rough=0.95),
@@ -212,6 +215,10 @@ def get(name):
         nt.links.new(ntex.outputs['Color'], nm.inputs['Color'])
         nt.links.new(nm.outputs['Normal'], bsdf.inputs['Normal'])
 
+    if d.get('alpha') is not None:
+        bsdf.inputs['Alpha'].default_value = d['alpha']
+        if hasattr(mat, 'surface_render_method'):
+            mat.surface_render_method = 'BLENDED'
     if d.get('emit'):
         bsdf.inputs['Emission Color'].default_value = (*hex_lin(d['emit']), 1.0)
         bsdf.inputs['Emission Strength'].default_value = 1.0

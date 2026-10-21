@@ -684,6 +684,25 @@ def pastry_box():
     return rgb
 
 
+def plate():
+    """Blank EU-style number plate (no characters): white with a black rim and the blue band with a ring of stars."""
+    w, h = 1024, 256
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32)
+    rgb = np.broadcast_to(hexc('#F4F2EC'), (h, w, 3)).copy()
+    rgb *= (1 + 0.015 * noise(256, 20, seed=191)[np.clip(ys.astype(int) % 256, 0, 255), xs.astype(int) % 256])[..., None]
+    rim = (xs < 10) | (xs > w - 11) | (ys < 10) | (ys > h - 11)
+    band = (xs >= 10) & (xs < 120) & ~rim
+    rgb = lerp(rgb, hexc('#1F3F8F'), band.astype(np.float32))
+    cx, cy = 65, h * 0.62
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        sx, sy = cx + 34 * math.cos(a), cy + 34 * math.sin(a)
+        star = ((xs - sx) ** 2 + (ys - sy) ** 2) < 25
+        rgb = lerp(rgb, hexc('#F2C230'), star.astype(np.float32))
+    rgb = lerp(rgb, hexc('#1E1E1E'), rim.astype(np.float32))
+    return rgb
+
+
 GENERATORS = {
     'plaster': plaster, 'plaster_n': plaster,
     'lioz': lioz, 'lioz_n': lioz,
@@ -704,4 +723,5 @@ GENERATORS = {
     'far_shore': far_shore,
     'bridge': bridge,
     'pastry_box': pastry_box,
+    'plate': plate,
 }

@@ -9,6 +9,7 @@ Options after `--`:
     --render v1,v2,v3   Cycles target renders of the review views (art/renders/)
     --preview           renders at 960x540 with fewer samples into out/previews instead
     --samples N         render samples (default 96)
+    --car-only          rebuild and export only the car (the street is built for context but not exported)
 
 Writes art/blender/out/proof.blend, art/exports/bica.glb and art/exports/microcar.glb.
 """
@@ -95,7 +96,10 @@ def main():
     only = only.split(',') if isinstance(only, str) else None
 
     objs = []
+    car_only = bool(opt('--car-only'))
     t = time.time()
+    if car_only:
+        only = ['__none__']
     objs.append(street.build(scene_c))
     log('street: %.1fs' % (time.time() - t))
 
@@ -130,7 +134,7 @@ def main():
     tris, prims = stats(objs)
     log('scene: %d objects, %d primitives (mesh x material), %d triangles' % (len(objs), prims, tris))
 
-    if not opt('--no-export'):
+    if not opt('--no-export') and not car_only:
         export(objs, os.path.join(EXPORTS, 'bica.glb'))
 
     # hero microcar: built and baked on its own, far above the street so the street doesn't occlude it
@@ -146,7 +150,7 @@ def main():
     if not opt('--no-export'):
         export([car], os.path.join(EXPORTS, 'microcar.glb'))
     # park it where the engine's chase view puts it, for the Cycles target renders
-    car.location = (1.1, 7.0, street.road_z(7.0))
+    car.location = (0.85, 7.0, street.road_z(7.0))
     car.rotation_euler = (-math.atan(street.SLOPE), 0.0, 0.0)
 
     rv = opt('--render')

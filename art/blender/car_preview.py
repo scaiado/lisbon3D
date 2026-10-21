@@ -54,10 +54,11 @@ world.node_tree.nodes['Background'].inputs['Color'].default_value = (*Mt.hex_lin
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = 1.2
 
 SHOTS = {
-    'side': ((6.5, 0.0, 0.75), (0, 0, 0.72), 22),
-    'front34': ((4.2, 4.6, 1.6), (0, 0.1, 0.7), 26),
-    'rear34': ((-4.0, -4.8, 1.9), (0, -0.1, 0.75), 26),
-    'chase': ((0.0, -5.0, 2.0), (0, 1.0, 0.6), 50),
+    'front34': ((4.6, 5.6, 1.75), (0, 0.35, 0.72), 30),
+    'side': ((8.8, 0.0, 0.95), (0, 0, 0.74), 25),
+    'rear34': ((-4.4, -5.8, 1.85), (0, -0.3, 0.78), 30),
+    'rear': ((0.0, -8.6, 1.25), (0, 0, 0.78), 22),
+    'chase': ((0.0, -6.0, 2.1), (0, 1.5, 0.6), 50),
 }
 cull = '--cull' in argv
 for name, (pos, tgt, fov) in SHOTS.items():
@@ -79,7 +80,7 @@ for name, (pos, tgt, fov) in SHOTS.items():
         scene.cycles.samples = 48
         scene.cycles.use_denoising = True
         scene.view_settings.view_transform = 'AgX'
-    scene.render.resolution_x, scene.render.resolution_y = 1200, 700
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 1000
     scene.render.filepath = os.path.join(OUT, name + ('_cull' if cull else '') + '.png')
     bpy.ops.render.render(write_still=True)
     print('[car] rendered', name)

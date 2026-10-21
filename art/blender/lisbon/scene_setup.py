@@ -20,8 +20,8 @@ VIEWS = {
     'view2_facade': ((1.3, 9.2, S.pave_z(9.2) + 1.55), (-3.1, 14.6, S.pave_z(14.6) + 3.2), 50.0),
     # high over the top of the Bica, turned toward the bridge: street and roofs below, layered city, river, far shore
     'view3_establishing': ((-30.0, -40.0, 48.0), (115.0, 320.0, -49.0), 40.0),
-    # the parked microcar in side profile, from the west pavement
-    'view4_carside': ((-2.25, 7.0, S.road_z(7.0) + 0.95), (1.1, 7.0, S.road_z(7.0) + 0.72), 50.0),
+    # the parked hatchback in side profile, from the west pavement
+    'view4_carside': ((-2.6, 7.0, S.road_z(7.0) + 1.0), (0.85, 7.0, S.road_z(7.0) + 0.75), 55.0),
 }
 
 

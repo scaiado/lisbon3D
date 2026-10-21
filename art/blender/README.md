@@ -67,21 +67,37 @@ and calçada, 1024 for most others, 256–512 for small ones. Every texture is l
 Largest pieces: authored buildings 21k–79k each, mid-ground city 109k, street 35k, funicular 8k, people 5.7k, animals 2.7k.
 Raw size breakdown: positions 18.9 MB, normals 18.9 MB, UVs 12.6 MB, colours 6.3 MB, indices 7.0 MB, textures 14.8 MB.
 
-## Microcar
+## Hero car (`microcar.py`, exported as `microcar.glb`)
 
-An invented two-door city car, not based on any real car. It has a lofted teal body with a short sloping bonnet, wheel arches cut with a
-boolean and finished with flares, and a glasshouse with a raked windscreen, A and B pillars, side and rear windows and a cream roof.
-It also has round headlamp pods, a small oval grille, chrome bumpers, round tail lamps, door lines, handles and mirrors. The pastry
-branding is an accessory: a round cake tin on a roof rack, plus a small roundel on each door.
+An ordinary five-door European city hatchback, slightly compact for the game. It is generic: no make or model, no
+brand-like grille, logo or signature lamps.
+- **Shape:** two-box, with a short bonnet, a raked windscreen and a roof that dips toward the rear. Sloped hatch glass
+  under a small spoiler lip with the third brake light.
+- **Glasshouse:** front and rear door glass, a small rear quarter glass and the hatch glass, with A, B and C pillars.
+  The B pillar is black, and every window has a dark belt seal. The glass is tinted and translucent, so the seats,
+  dashboard and steering wheel (left-hand drive) show through.
+- **Body:** body-coloured bumpers with black intakes, black arch lips and sills, a shoulder line, door shut lines and
+  pull handles, mirrors, a fuel flap, and hatch shut lines.
+- **Lights and plates:** swept-back headlamps projected onto the body corners, vertical tail lamps with amber
+  indicators, and blank EU-style plates (blue band, no characters).
+- **Wheels:** plain 5-spoke alloys.
+- **Paint and branding:** soft teal; the only branding is a 0.28 m pastry roundel on each front door.
 
 | | Blender | glTF |
 |---|---|---|
 | Origin | ground, midway between the axles | same |
 | Facing | +Y | -Z |
-| Wheelbase | 1.70 m (axles at y = ±0.85) | z = ∓0.85 |
-| Wheel radius = axle height | 0.27 m | y = 0.27 |
-| Track (wheel centres) | 1.20 m (x = ±0.60) | |
-| Overall | 2.65 m long, 1.6 m wide at the mirrors, 1.93 m tall with the tin (1.53 m roof) | |
+| Length / width / height | 3.55 m / 1.62 m (1.82 m with mirrors) / 1.50 m | |
+| Wheelbase | 2.36 m (axles at y = ±1.18) | z = ∓1.18 |
+| Overhangs | front 0.68 m, rear 0.51 m | |
+| Wheel radius = axle height | 0.29 m | y = 0.29 |
+| Track | 1.40 m (wheel centres x = ±0.70) | |
+| Ground clearance | 0.14 m | |
+| Triangles | 11,116 | |
+
+The glass material `car_glass` has alpha 0.62 (glTF `alphaMode` BLEND). Studio previews (front three-quarter, side,
+rear three-quarter, rear): `art/renders/car/`. Regenerate them with `car_preview.py`, and the export with
+`build_proof.py -- --car-only`. In the scene the car is parked at (0.85, 7.0, road), pitched to the slope.
 
 ## Review cameras (Blender coordinates: X west, Y downhill/south, Z up; vertical FOV)
 
@@ -90,9 +106,9 @@ branding is an accessory: a round cake tin on a roof rack, plus a small roundel 
 | view1_chase | (0.35, -3.2, 2.25) | (0.0, 40.0, -5.5) | 50° |
 | view2_facade | (1.3, 9.2, pave+1.55) | (-3.1, 14.6, pave+3.2) | 50° |
 | view3_establishing | (-30.0, -40.0, 48.0) | (115.0, 320.0, -49.0) | 40° |
-| view4_carside | (-2.25, 7.0, road+0.95) | (1.1, 7.0, road+0.72) | 50° |
+| view4_carside | (-2.6, 7.0, road+1.0) | (0.85, 7.0, road+0.75) | 55° |
 
-glTF = (x, z, -y). The car is parked at (1.1, 7.0, road_z(7.0)), pitched to the 18% slope, for the target renders.
+glTF = (x, z, -y). The car is parked at (0.85, 7.0, road_z(7.0)), pitched to the 18% slope, for the target renders.
 
 ## Blender target renders
 
