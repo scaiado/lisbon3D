@@ -87,7 +87,10 @@ DEF = {
     'car_amber': dict(tex=None, color='#E39A2E', rough=0.15),
     'car_trim': dict(tex=None, color='#2A2E31', rough=0.65),
     'car_plate': dict(tex='plate', tile=1.0, rough=0.4),
-    'car_seat': dict(tex=None, color='#4A4644', rough=0.85),
+    'car_seat': dict(tex='plaster', tint='#D8BE94', tile=0.5, rough=0.7),          # cream-tan upholstery
+    'car_interior': dict(tex='plaster', tint='#C4A57A', tile=0.5, rough=0.75),      # door cards, piping
+    'car_hood': dict(tex='plaster', tint='#8F7458', tile=0.5, rough=0.95, normal='plaster_n'),   # folded canvas hood, warm tan
+    'car_hood_dark': dict(tex=None, color='#5A4636', rough=0.9),                     # stitched folds
     # mid-ground and backdrop
     'far_ochre': dict(tex='far_facade', tint='#D9A14E', tile=3.2, rough=0.95),
     'far_rose': dict(tex='far_facade', tint='#D98E7A', tile=3.2, rough=0.95),

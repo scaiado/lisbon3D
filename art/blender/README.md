@@ -69,20 +69,20 @@ Raw size breakdown: positions 18.9 MB, normals 18.9 MB, UVs 12.6 MB, colours 6.3
 
 ## Hero car (`microcar.py`, exported as `microcar.glb`)
 
-A small, charming old car clearly inspired by the classic Beetle, in the STYLE-C look. It has no real-world badges,
-logos or VW emblem; the bonnet carries only a plain chrome strip.
-- **Body:** one continuous rounded arch in side profile. A short convex front lid rises from just above the bumper to a
-  small, fairly upright windscreen (about 35° from vertical). The domed roof peaks above the B pillar and falls in one
-  unbroken curve over the rear window and the engine lid to the bumper. Strong tumblehome.
-- **Fenders:** four separate bulbous fenders standing proud of the body, with round chrome-ringed headlamps in the
-  front ones and upright oval tail lamps on the rear ones. Running boards with black rubber tops sit between them.
-- **Glass:** a curved-top door window and a small quarter window each side, the windscreen and a small oval rear
-  window, all with thin chrome trim. The glass is translucent, showing two front seats, a rear bench, a thin steering
-  wheel on the left and a body-colour dashboard.
-- **Details:** chrome blade bumpers with overriders, cream steel wheels with domed chrome hubcaps and whitewall tyres,
-  round door mirrors, chrome handles, horn grilles, bullet indicators on the front fenders, louvres on the engine lid,
-  and blank EU-style plates.
-- **Paint:** soft pastel mint (`car_paint`, #A6D1BD) with cream wheels.
+A charming classic-Beetle-style cabriolet, in the STYLE-C look. It has no real-world badges, logos or VW emblem; the
+bonnet carries only a plain chrome strip.
+- **Body:** one rounded arch in side profile. A raised, broad, domed front lid sits between full, round front fenders
+  that carry large round headlamps (~0.21 m chrome rings, centres at x = ±0.58). The rolled cockpit edge has a thin
+  chrome strip, and the curved engine lid runs down to the rear bumper.
+- **Open cabin** (boolean cut): cream-tan upholstered buckets and rear bench, tan door cards, a body-colour dashboard
+  top with a round speedometer, a thin cream steering wheel on the left and a gear lever.
+- **Windscreen:** framed and fairly upright, with a body-colour frame, a chrome inner bead, glass, wipers and an
+  interior mirror.
+- **Folded hood:** a padded tan canvas bundle on the rear deck behind the bench, with stitched folds and two straps.
+- **Fenders and running gear:** four separate bulbous fenders, running boards, chrome blade bumpers with overriders,
+  cream wheels with whitewalls and domed chrome hubcaps, and blank EU-style plates.
+- **Paint:** soft pastel mint (`car_paint`, #A6D1BD). New materials: `car_hood` (tan canvas), `car_hood_dark`
+  (stitching) and `car_interior` (door cards). `car_seat` is now cream-tan upholstery.
 - **Branding:** subtle only, a 0.26 m pastry roundel on each door.
 
 | | Blender | glTF |
@@ -92,12 +92,12 @@ logos or VW emblem; the bonnet carries only a plain chrome strip.
 | Wheelbase | 2.40 m (axles at y = ±1.20) | z = ∓1.20 |
 | Body nose / tail | y = +2.01 / -2.06 (bumpers +2.13 / -2.18) | z = -2.01 / +2.06 |
 | Overall length | 4.05 m body, ~4.28 m over the bumpers | |
-| Width / height | 1.54 m over the fenders, 1.40 m body / 1.50 m | |
+| Width / height | 1.61 m over the fenders, 1.42 m body / 1.43 m to the windscreen top (hood bundle ~1.32 m) | |
 | Wheel radius = axle height | 0.31 m | y = 0.31 |
 | Track | 1.31 m front, 1.35 m rear | |
 | Ground clearance | ~0.34 m (running boards, the lowest part of the body); classic tall stance | |
 
-Studio previews (front three-quarter, side, rear three-quarter, rear) are in `art/renders/car/beetle_*.png`.
+Studio previews (front three-quarter, side, rear three-quarter, rear) are in `art/renders/car/cabrio_*.png`; the earlier closed version is in `beetle_*.png`.
 Regenerate them with `car_preview.py`, and the export with `build_proof.py -- --car-only`. In the scene the car is
 parked at (0.85, 7.0, road), pitched to the slope.
 

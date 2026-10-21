@@ -55,7 +55,7 @@ nothing was traced or sampled from it. Licence: ours (project code and output).
 | River, sky, far shore, bridge cards | `river()`, `sky()`, `far_shore()`, `bridge()` | procedural | the bridge is a generic suspension-bridge silhouette |
 | Pastry-box decal | `pastry_box()` | procedural | invented tart roundel on the microcar |
 | All geometry (buildings, street, funicular, props, backdrop, microcar) | `lisbon/*.py` | Blender 5.2.0 LTS Python scripts | 12 authored building recipes plus derived variants; funicular and microcar are original designs |
-| Hero car (Beetle-inspired, fourth version) | `lisbon/microcar.py` | Blender Python | inspired by the classic Beetle's general form at kAI's request; modelled from scratch, with no VW or other real badge, logo or emblem, and blank plates |
+| Hero car (Beetle-inspired; fifth version is a cabriolet) | `lisbon/microcar.py` | Blender Python | inspired by the classic Beetle's general form at kAI's request; modelled from scratch, with no VW or other real badge, logo or emblem, and blank plates |
 | Blank EU-style number plate texture | `textures.py` `plate()` | procedural | blue band with a ring of dots; no characters |
 | People, cats, gulls, pigeons | `lisbon/life.py` | Blender Python | stylised storybook figures, no faces drawn, no likeness of real people |
 | Mid-ground city, church, riverfront trees | `lisbon/backdrop.py` | Blender Python | generic Lisbon forms, not specific buildings |
