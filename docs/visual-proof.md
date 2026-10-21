@@ -13,7 +13,7 @@ npm run dev            # then open http://localhost:5173/proof.html
 Without installing anything: `cd perf/dist && python3 -m http.server 8080` and open
 `http://localhost:8080/proof.html` (see `perf/README.md`; rebuild with `npm run build:perf`).
 
-- `?view=chase|carside|facade|establish`, or keys 1–4 and the buttons: the review views. `?view=free` adds orbit controls.
+- `?view=chase|carfront|carside|carrear|facade|establish`, or keys 1–6 and the buttons: the review views. `?view=free` adds orbit controls.
 - `?renderer=webgl` (default here), `webgpu` or `webgpu-gl2`; `?shadows=0`, `?ao=0`, `?bloom=0`, `?aa=0`; `?dof=1` turns depth of field on.
 - `?dpr=1.5` caps the pixel ratio; `?clean` hides the HUD.
 - `?report=1` measures every view (3 s warm-up + 10 s each), shows copyable JSON and logs each view as `GET ./__perf?…`.

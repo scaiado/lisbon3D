@@ -12,7 +12,7 @@ import { PROOF_VIEWS, applyPose, placeMicrocar, viewPose, type ProofView } from 
 /**
  * Stage 2b visual proof: the Blender-built top of the Bica, lit in-engine, seen from the three review views.
  *
- *   ?view=chase|carside|facade|establish   review camera (default chase); ?view=free adds orbit controls
+ *   ?view=chase|carfront|carside|carrear|facade|establish   review camera (default chase); ?view=free adds orbit controls
  *   ?report=1   frame-rate run over every view (3 s warm-up + 10 s each; ?warmup= and ?seconds= override)
  *   ?renderer=webgl|webgpu|webgpu-gl2 and the effect switches work as in the renderer spike; ?dof=1 turns depth of field on.
  *   The proof defaults to the classic WebGL 2 route, the first-class path until the renderer is decided.
@@ -70,7 +70,7 @@ async function start(): Promise<void> {
     controls?.target.copy(pose.target);
     route.setFocusDistance(pose.focus);
     const center = pose.position.clone().lerp(pose.target, 0.35);
-    lighting.fitShadow(center, view === 'establish' ? 140 : view === 'carside' ? 25 : 60);
+    lighting.fitShadow(center, view === 'establish' ? 140 : view.startsWith('car') ? 25 : 60);
     document.body.dataset['view'] = view;
   };
   show(view);
@@ -120,7 +120,14 @@ function megabytes(bytes: Record<string, number>): string {
 function mountHud(parent: HTMLElement, choose: (view: ProofView) => void): HTMLElement {
   const panel = document.createElement('nav');
   panel.className = 'proof-hud';
-  const labels: Record<ProofView, string> = { chase: '1 Street', carside: '2 Car side', facade: '3 Façade', establish: '4 Wide' };
+  const labels: Record<ProofView, string> = {
+    chase: '1 Street',
+    carfront: '2 Car front',
+    carside: '3 Car side',
+    carrear: '4 Car rear',
+    facade: '5 Façade',
+    establish: '6 Wide'
+  };
   for (const view of PROOF_VIEWS) {
     const button = document.createElement('button');
     button.type = 'button';
