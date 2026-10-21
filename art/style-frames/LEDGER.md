@@ -55,6 +55,9 @@ nothing was traced or sampled from it. Licence: ours (project code and output).
 | River, sky, far shore, bridge cards | `river()`, `sky()`, `far_shore()`, `bridge()` | procedural | the bridge is a generic suspension-bridge silhouette |
 | Pastry-box decal | `pastry_box()` | procedural | invented tart roundel on the microcar |
 | All geometry (buildings, street, funicular, props, backdrop, microcar) | `lisbon/*.py` | Blender 5.2.0 LTS Python scripts | 12 authored building recipes plus derived variants; funicular and microcar are original designs |
+| Microcar (third pass redesign) | `lisbon/microcar.py` | Blender Python | original design; no reference car |
+| People, cats, gulls, pigeons | `lisbon/life.py` | Blender Python | stylised storybook figures, no faces drawn, no likeness of real people |
+| Mid-ground city, church, riverfront trees | `lisbon/backdrop.py` | Blender Python | generic Lisbon forms, not specific buildings |
 | Ambient occlusion (vertex colour `COLOR_0`) | `lisbon/bake.py` | Cycles AO bake | tinted toward the blue-violet shade; no sun light baked |
 
 Review status: generated and reviewed by Claude at texture-sheet and render level; awaiting kAI's visual review.

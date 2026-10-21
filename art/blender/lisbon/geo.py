@@ -39,6 +39,11 @@ class MeshBuilder:
         self.verts = []          # world-space Vectors
         self.faces = []          # (vertex index tuple, material name, uv tuple or None, bevel flag, smooth flag)
         self.stack = [Matrix.Identity(4)]
+        self.tint_ranges = []    # (first face index, rgb): per-face colour multiplied into the vertex colour
+
+    def set_tint(self, rgb):
+        """Faces added from now on carry this tint (baked into COLOR_0 after the AO bake)."""
+        self.tint_ranges.append((len(self.faces), tuple(rgb)))
 
     # ---- transform stack -------------------------------------------------
     @property
@@ -141,6 +146,38 @@ class MeshBuilder:
         for a, b in zip(pts[:-1], pts[1:]):
             self.cyl(mat, a, b, r, seg=seg, caps=False, smooth=smooth)
 
+    def sweep(self, mat, pts, r, seg=8, smooth=True, caps=True):
+        """Smooth tube with shared vertices along a polyline (parallel-transported frames)."""
+        P = [Vector(p) for p in pts]
+        if len(P) < 2:
+            return
+        m = self.m
+        base = len(self.verts)
+        tangents = []
+        for i in range(len(P)):
+            a = P[max(0, i - 1)]
+            b = P[min(len(P) - 1, i + 1)]
+            tangents.append((b - a).normalized())
+        t0 = tangents[0]
+        ref = Vector((0, 0, 1)) if abs(t0.z) < 0.9 else Vector((1, 0, 0))
+        n = t0.cross(ref).normalized()
+        for i, p in enumerate(P):
+            t = tangents[i]
+            n = (n - t * n.dot(t)).normalized()
+            bvec = t.cross(n)
+            for k in range(seg):
+                ang = 2 * math.pi * k / seg
+                self.verts.append(m @ (p + (n * math.cos(ang) + bvec * math.sin(ang)) * r))
+        for i in range(len(P) - 1):
+            for k in range(seg):
+                k2 = (k + 1) % seg
+                q = (base + i * seg + k, base + (i + 1) * seg + k, base + (i + 1) * seg + k2, base + i * seg + k2)
+                self.faces.append((q, mat, None, False, smooth))
+        if caps:
+            self.faces.append((tuple(base + k for k in range(seg)), mat, None, False, False))
+            last = base + (len(P) - 1) * seg
+            self.faces.append((tuple(last + k for k in reversed(range(seg))), mat, None, False, False))
+
     def sphere(self, mat, c, r, seg=10, rings=6, sz=None, smooth=True):
         cx, cy, cz = c
         sx, sy, szz = (r, r, r) if sz is None else sz
@@ -222,11 +259,20 @@ class MeshBuilder:
         bverts = [bm.verts.new(v) for v in self.verts]
         uv_layer = bm.loops.layers.uv.new('UVMap')
         bw = bm.edges.layers.float.new('bevel_weight_edge')
-        for idx, mat, uvs, bev, smooth in self.faces:
+        tint_layer = bm.loops.layers.float_color.new('Tint') if self.tint_ranges else None
+        ranges = sorted(self.tint_ranges)
+        ri, cur = 0, (1.0, 1.0, 1.0)
+        for fi, (idx, mat, uvs, bev, smooth) in enumerate(self.faces):
+            while ri < len(ranges) and ranges[ri][0] <= fi:
+                cur = ranges[ri][1]
+                ri += 1
             try:
                 f = bm.faces.new([bverts[i] for i in idx])
             except ValueError:
                 continue  # duplicate face
+            if tint_layer is not None:
+                for l in f.loops:
+                    l[tint_layer] = (*cur, 1.0)
             f.material_index = mats.index(mat)
             f.smooth = smooth
             if uvs is None:

@@ -48,8 +48,12 @@ def roof_plane(mb, O, U, V, Lu, Lv, hip_l=0.0, hip_r=0.0, detail=2, mat='roof_ti
         p = O + U * uc + V * v + N * h
         return (p.x, p.y, p.z)
 
+    # 16 x 16 tiles per texture period; offset each plane so neighbouring roofs don't line up
+    ou = (abs(O.x * 7.31 + O.y * 3.17) % 16) / 16.0
+    ov = (abs(O.x * 1.93 + O.z * 5.71) % 16) / 16.0
+
     def UV(i, j):
-        return (Lu * i / nu / (4 * PERIOD), vs[j][0] / (4 * ROW))
+        return (ou + Lu * i / nu / (16 * PERIOD), ov + vs[j][0] / (16 * ROW))
 
     def keep(i, j):
         # drop quads lying wholly outside the hip boundaries (they would collapse onto the hip line)
@@ -106,7 +110,7 @@ def chimney(mb, x, y, z_base, z_top, mat='plaster_white', w=0.62, d=0.48):
     for s in (-1, 1):
         q = [(x - w / 2 - 0.1, y + s * (d / 2 + 0.12), zh), (x + w / 2 + 0.1, y + s * (d / 2 + 0.12), zh),
              (x + w / 2 + 0.1, y, zh + 0.22), (x - w / 2 - 0.1, y, zh + 0.22)]
-        uv = [(0, 0), (1, 0), (1, 0.3), (0, 0.3)]
+        uv = [(0, 0), (0.25, 0), (0.25, 0.06), (0, 0.06)]
         if s > 0:
             q, uv = q[::-1], uv[::-1]
         mb.quad('roof_tile', *q, uvs=uv)

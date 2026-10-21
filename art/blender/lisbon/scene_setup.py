@@ -18,7 +18,10 @@ VIEWS = {
     # name: (camera position, look-at target, vertical fov degrees)
     'view1_chase': ((0.35, -3.2, 2.25), (0.0, 40.0, -5.5), 50.0),
     'view2_facade': ((1.3, 9.2, S.pave_z(9.2) + 1.55), (-3.1, 14.6, S.pave_z(14.6) + 3.2), 50.0),
-    'view3_establishing': ((9.0, -16.0, 26.0), (-1.0, 90.0, -4.0), 45.0),
+    # high over the top of the Bica, turned toward the bridge: street and roofs below, layered city, river, far shore
+    'view3_establishing': ((-30.0, -40.0, 48.0), (115.0, 320.0, -49.0), 40.0),
+    # the parked microcar in side profile, from the west pavement
+    'view4_carside': ((-2.25, 7.0, S.road_z(7.0) + 0.95), (1.1, 7.0, S.road_z(7.0) + 0.72), 50.0),
 }
 
 
@@ -61,8 +64,8 @@ def sky_world(world):
     nt.links.new(comb.outputs[0], img.inputs['Vector'])
     bg_cam = n('ShaderNodeBackground'); bg_cam.inputs['Strength'].default_value = 1.0
     nt.links.new(img.outputs['Color'], bg_cam.inputs['Color'])
-    bg_fill = n('ShaderNodeBackground'); bg_fill.inputs['Strength'].default_value = 1.25
-    bg_fill.inputs['Color'].default_value = (*Mt.hex_lin('#8A94C4'), 1.0)   # blue-violet sky fill
+    bg_fill = n('ShaderNodeBackground'); bg_fill.inputs['Strength'].default_value = 1.35
+    bg_fill.inputs['Color'].default_value = (*Mt.hex_lin('#7C84C8'), 1.0)   # cooler blue-violet sky fill (STYLE-C shade)
     lp = n('ShaderNodeLightPath')
     mix = n('ShaderNodeMixShader')
     nt.links.new(lp.outputs['Is Camera Ray'], mix.inputs['Fac'])

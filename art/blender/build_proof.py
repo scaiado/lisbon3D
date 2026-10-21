@@ -24,7 +24,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 import bpy  # noqa: E402
 
 from lisbon import textures, recipes, buildings, street, bake, scene_setup, geo  # noqa: E402
-from lisbon import funicular, backdrop, microcar  # noqa: E402
+from lisbon import funicular, backdrop, microcar, life  # noqa: E402
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 
@@ -82,7 +82,9 @@ def export(objs, path):
                               export_yup=True, export_vertex_color='ACTIVE', export_lights=False,
                               export_cameras=False, export_image_format='AUTO', export_materials='EXPORT',
                               export_extras=False)
-    log('exported %s (%.1f MB)' % (os.path.relpath(path, ROOT), os.path.getsize(path) / 1e6))
+    from lisbon import glb_pack
+    n = glb_pack.pack_colors(path)
+    log('exported %s (%.1f MB, %d colour accessors packed to 8-bit)' % (os.path.relpath(path, ROOT), os.path.getsize(path) / 1e6, n))
 
 
 def main():
@@ -109,6 +111,7 @@ def main():
         t = time.time()
         objs.append(funicular.build(scene_c))
         far = backdrop.build(scene_c)
+        objs.extend(life.build(scene_c))
         log('funicular + mid-ground + backdrop: %.1fs' % (time.time() - t))
     else:
         far = []
@@ -152,7 +155,7 @@ def main():
         scene_setup.setup_light(light_c)
         preview = bool(opt('--preview'))
         samples = int(opt('--samples', 32 if preview else 96))
-        names = {'v1': 'view1_chase', 'v2': 'view2_facade', 'v3': 'view3_establishing'}
+        names = {'v1': 'view1_chase', 'v2': 'view2_facade', 'v3': 'view3_establishing', 'v4': 'view4_carside'}
         for k in rv.split(','):
             name = names.get(k, k)
             t = time.time()

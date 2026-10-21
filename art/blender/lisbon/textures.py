@@ -128,23 +128,45 @@ def downsample(a, f):
 
 
 # ---------------------------------------------------------------- image I/O
+def write_png(path, arr):
+    """Lossless PNG with per-row Paeth-free 'Sub'/'Up' filtering and zlib level 9: ~30% smaller than Blender's
+    default save. arr: (h, w, c) uint8, row 0 = bottom (UV v=0), so rows are flipped for PNG."""
+    import struct
+    import zlib
+    a = arr[::-1]
+    h, w, c = a.shape
+    a16 = a.astype(np.int16)
+    sub = np.concatenate([a16[:, :1], a16[:, 1:] - a16[:, :-1]], 1) % 256
+    up = np.concatenate([a16[:1], a16[1:] - a16[:-1]], 0) % 256
+    rows = []
+    for y in range(h):
+        # pick the filter with the smaller sum of absolute signed residuals for this row
+        s_cost = np.abs(((sub[y] + 128) % 256) - 128).sum()
+        u_cost = np.abs(((up[y] + 128) % 256) - 128).sum()
+        if u_cost < s_cost:
+            rows.append(b'\x02' + up[y].astype(np.uint8).tobytes())
+        else:
+            rows.append(b'\x01' + sub[y].astype(np.uint8).tobytes())
+    raw = zlib.compress(b''.join(rows), 9)
+
+    def chunk(t, d):
+        return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    ihdr = struct.pack('>IIBBBBB', w, h, 8, 6 if c == 4 else 2, 0, 0, 0)
+    with open(path, 'wb') as f:
+        f.write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', raw) + chunk(b'IEND', b''))
+
+
 def save(name, arr, non_color=False):
-    """arr: (h, w, 3|4) display values. Creates a Blender image saved as PNG in OUT."""
+    """arr: (h, w, 3|4) display values. Writes a compact PNG into OUT and loads it as a Blender image."""
     if name in _cache:
         return _cache[name]
-    arr = np.clip(arr, 0, 1).astype(np.float32)
-    h, w, c = arr.shape
-    if c == 3:
-        arr = np.concatenate([arr, np.ones((h, w, 1), np.float32)], -1)
-    img = bpy.data.images.new(name, w, h, alpha=(c == 4))
-    img.colorspace_settings.name = 'Non-Color' if non_color else 'sRGB'
-    img.pixels.foreach_set(arr.ravel())
+    arr = np.clip(arr, 0, 1)
+    u8 = (arr * 255 + 0.5).astype(np.uint8)
     path = os.path.join(OUT, name + '.png')
-    img.filepath_raw = path
-    img.file_format = 'PNG'
-    img.save()
-    img.source = 'FILE'
-    img.reload()
+    write_png(path, u8)
+    img = bpy.data.images.load(path, check_existing=False)
+    img.name = name
+    img.colorspace_settings.name = 'Non-Color' if non_color else 'sRGB'
     _cache[name] = img
     return img
 
@@ -171,7 +193,7 @@ def plaster():
     blot = fbm(n, 380, 2, seed=13)
     drips = noise(n, 6, 260, 0.0, 14)               # vertical rain streaks
     drip_mask = smoothstep(0.6, 1.8, noise(n, 120, 120, 0, 15))
-    L = 0.86 + 0.035 * wash + 0.012 * fine + 0.03 * blot - 0.03 * np.clip(drips, 0, None) * drip_mask
+    L = 0.86 + 0.022 * wash + 0.012 * fine + 0.012 * blot - 0.025 * np.clip(drips, 0, None) * drip_mask
     hue = noise(n, 300, 300, 0, 16)
     warm = np.array([1.0, 0.985, 0.955], np.float32)
     rgb = L[..., None] * warm * (1 + 0.02 * hue[..., None] * np.array([1.0, 0.3, -0.6], np.float32))
@@ -191,7 +213,7 @@ def plaster():
         xs = (np.arange(x0, x0 + w) % n)[None, :]
         rgb[ys, xs] *= np.float32(1.03)
     height = 0.6 * wash + 0.25 * fine + 2.0 * chip
-    nrm = height_to_normal(downsample(height, 2), 1.6)
+    nrm = height_to_normal(downsample(height, 2), 0.7)
     return {'plaster': (rgb, False), 'plaster_n': (nrm, True)}
 
 
@@ -284,30 +306,34 @@ def calcada():
 
 
 def roof_tile():
-    """Terracotta canal tiles: 4 channels x 4 rows per texture tile, each tile its own fired colour."""
-    n = 1024
+    """Terracotta canal tiles: 16 channels x 16 rows per texture (one period of 3.84 m x 6.72 m on the roof), each
+    tile its own fired colour, with soft large-scale patches of older and newer tiles so roofs don't checker."""
+    n = 2048
     ys, xs = np.mgrid[0:n, 0:n].astype(np.float32)
-    cu, cv = 4, 4
+    cu = cv = 16
     u = xs / n * cu
     v = ys / n * cv
     ci = np.floor(u).astype(np.int32) % cu
     cj = np.floor(v).astype(np.int32) % cv
     cid = cj * cu + ci
-    r = cell_rand(cid, 61, 16)
-    r2 = cell_rand(cid, 62, 16)
-    base = lerp(hexc('#B8552E'), hexc('#C9774A'), r)
-    base = lerp(base, hexc('#8E4127'), (r2 > 0.75) * 0.7)
+    r = cell_rand(cid, 61, cu * cv)
+    r2 = cell_rand(cid, 62, cu * cv)
+    base = lerp(hexc('#BA5A32'), hexc('#C77446'), r)
+    base = lerp(base, hexc('#9A4A2C'), (r2 > 0.88) * 0.5)
+    patches = brush_wash(n, 420, 66, 5)
+    base = lerp(base, hexc('#A85538'), smoothstep(0.3, 1.6, patches) * 0.45)     # older weathered patches
+    base = lerp(base, hexc('#D08452'), smoothstep(0.6, 1.9, -patches) * 0.35)    # newer replacement tiles
     fv = v - np.floor(v)
     # lower lip of each tile is darker (it sits in the shadow of the next row), top is sun-bleached
     lip = smoothstep(0.0, 0.12, fv)
-    rgb = base * (0.78 + 0.22 * lip[..., None])
-    rgb = rgb * (1 + 0.08 * smoothstep(0.6, 1.0, fv)[..., None])
-    wash = brush_wash(n, 60, 63, 4)
-    rgb = rgb * (1 + 0.05 * wash[..., None])
-    lichen = smoothstep(1.7, 2.2, fbm(n, 30, 3, seed=64))
-    rgb = lerp(rgb, hexc('#C8B77A'), lichen * 0.7)
-    soot = smoothstep(0.5, 2.0, fbm(n, 150, 2, seed=65))
-    rgb = lerp(rgb, rgb * 0.75, soot * 0.4)
+    rgb = base * (0.84 + 0.16 * lip[..., None])
+    rgb = rgb * (1 + 0.06 * smoothstep(0.6, 1.0, fv)[..., None])
+    wash = brush_wash(n, 90, 63, 4)
+    rgb = rgb * (1 + 0.04 * wash[..., None])
+    lichen = smoothstep(1.8, 2.3, fbm(n, 40, 3, seed=64))
+    rgb = lerp(rgb, hexc('#C8B77A'), lichen * 0.6)
+    soot = smoothstep(0.8, 2.2, fbm(n, 300, 2, seed=65))
+    rgb = lerp(rgb, rgb * 0.8, soot * 0.35)
     return rgb
 
 
