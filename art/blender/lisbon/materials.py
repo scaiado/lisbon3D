@@ -75,8 +75,9 @@ DEF = {
     'lamp_glow': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
     # microcar
     'car_teal': dict(tex=None, color='#3A9E9A', rough=0.25, clearcoat=True),
+    'car_paint': dict(tex=None, color='#A6D1BD', rough=0.28, clearcoat=True),     # soft pastel mint (Beetle)
     'car_box': dict(tex='pastry_box', tile=1.0, rough=0.4),
-    'car_cream': dict(tex=None, color='#F1E6CC', rough=0.4),
+    'car_cream': dict(tex=None, color='#F1E6CC', rough=0.35),
     'car_tyre': dict(tex=None, color='#2A2827', rough=0.85),
     'car_chrome': dict(tex=None, color='#D9D6CF', rough=0.15, metal=1.0),
     'car_alloy': dict(tex=None, color='#B8BCC0', rough=0.3, metal=0.85),

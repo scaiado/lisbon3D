@@ -1,13 +1,16 @@
-"""The hero car: an ordinary five-door European city hatchback (A/B segment), slightly compact for the game, in
-the STYLE-C look. It is generic: no make or model, no brand-like grille, logo or signature lamps.
+"""The hero car: a small, charming old car clearly inspired by the classic Beetle, in the STYLE-C look.
+It carries no real-world badges or logos.
 
-It is a two-box shape. A short bonnet slopes gently to a raked windscreen, then a mostly flat roof, then a
-near-vertical hatch with a small spoiler lip. The beltline is fairly high with a slight rise toward the C pillar.
-The glasshouse has front and rear door windows, a small rear quarter glass and the hatch glass, with A, B and C
-pillars; the B pillar is blacked out and every window has a dark seal along the belt. The bumpers are body-coloured
-with black lower intakes. It has black arch lips and sills, door shut lines, pull handles, mirrors, a fuel flap,
-swept-back headlamps, vertical tail lamps, a third brake light, blank EU-style plates, wipers, 5-spoke alloys and a
-visible interior with left-hand drive. The only branding is a small pastry roundel on each front door.
+- Shell: one continuous rounded arch in side profile. A short rounded bonnet runs down to the front valance; the small,
+  fairly upright windscreen leads into a domed roof that flows down the long engine lid to the tail. Strong tumblehome.
+- Fenders: four separate bulbous fenders stand proud of the body. The front ones hold the round headlamps; the rear
+  ones carry upright oval tail lamps. Running boards sit between them.
+- Glass: a curved-top door window and a small quarter window each side, a small oval rear window and the windscreen,
+  all with thin chrome trim, in translucent glass with the interior visible (left-hand drive).
+- Details: chrome blade bumpers with overriders, cream steel wheels with chrome hubcaps and whitewall tyres, round
+  door mirrors, chrome handles, horn grilles, engine-lid louvres, a plain chrome strip on the bonnet and blank
+  EU-style plates.
+- Branding: subtle only, a small pastry roundel on each door.
 
 Local frame (Blender): origin on the ground midway between the axles, nose toward +Y (exported glTF: facing -Z).
 """
@@ -18,113 +21,175 @@ from mathutils import Vector
 
 from .geo import MeshBuilder, apply_modifiers
 
-WHEEL_R = 0.29          # axle height = wheel radius
-TRACK = 1.40
-WHEEL_X = TRACK / 2
-WHEELBASE = 2.36
+WHEEL_R = 0.31
+WHEELBASE = 2.40
 AXLE_Y = WHEELBASE / 2
-ARCH_R = WHEEL_R + 0.045
-LENGTH = 3.55
-FRONT_Y = AXLE_Y + 0.68     # 1.86
-REAR_Y = -(AXLE_Y + 0.51)   # -1.69
-PAINT = 'car_teal'
+TRACK_F, TRACK_R = 1.31, 1.35
+NOSE_Y, TAIL_Y = 2.00, -2.05          # body ends; bumpers reach ~ +2.11 / -2.15
+PAINT = 'car_paint'
+N_SECTION = 40
 
-# lower body cross-sections: (y, half width, bottom z, shoulder top z, superellipse exponent)
-TUB = [
-    (-1.695, 0.30, 0.44, 0.90, 2.4),
-    (-1.688, 0.60, 0.32, 0.99, 3.0),
-    (-1.660, 0.76, 0.22, 1.03, 4.0),
-    (-1.500, 0.80, 0.17, 1.045, 5.5),
-    (-0.800, 0.81, 0.14, 1.035, 6.0),
-    (0.400, 0.81, 0.14, 1.015, 6.0),
-    (0.900, 0.805, 0.15, 0.97, 5.6),
-    (1.300, 0.80, 0.17, 0.885, 5.0),
-    (1.600, 0.78, 0.20, 0.815, 4.2),
-    (1.780, 0.72, 0.24, 0.765, 3.4),
-    (1.845, 0.56, 0.29, 0.725, 2.8),
-    (1.862, 0.26, 0.35, 0.675, 2.2),
+# shell sections: (y, half width, bottom z, z of the widest line, top z, top exponent, bottom exponent)
+SHELL = [
+    (-2.050, 0.20, 0.49, 0.58, 0.66, 2.2, 2.2),
+    (-2.020, 0.47, 0.41, 0.60, 0.79, 2.3, 2.6),
+    (-1.930, 0.58, 0.35, 0.62, 0.91, 2.4, 3.0),
+    (-1.700, 0.65, 0.32, 0.64, 1.08, 2.4, 3.6),
+    (-1.400, 0.68, 0.31, 0.65, 1.23, 2.3, 4.0),
+    (-1.000, 0.70, 0.31, 0.66, 1.37, 2.25, 4.0),
+    (-0.500, 0.70, 0.31, 0.67, 1.46, 2.2, 4.0),
+    (0.000, 0.70, 0.31, 0.67, 1.50, 2.2, 4.0),
+    (0.350, 0.70, 0.31, 0.67, 1.485, 2.25, 4.0),
+    (0.600, 0.695, 0.31, 0.67, 1.445, 2.35, 4.0),
+    (0.750, 0.685, 0.31, 0.67, 1.24, 2.5, 4.0),
+    (0.880, 0.67, 0.32, 0.67, 1.035, 2.6, 4.0),
+    (1.150, 0.62, 0.33, 0.66, 0.935, 2.7, 3.8),
+    (1.450, 0.56, 0.35, 0.64, 0.845, 2.6, 3.2),
+    (1.720, 0.48, 0.38, 0.62, 0.75, 2.4, 2.8),
+    (1.900, 0.36, 0.42, 0.60, 0.665, 2.3, 2.5),
+    (1.980, 0.22, 0.46, 0.585, 0.615, 2.2, 2.3),
+    (2.000, 0.10, 0.49, 0.58, 0.60, 2.0, 2.0),
 ]
-N_SECTION = 44
 
-# glasshouse sections: (y, half width at belt, half width at roof, belt z, roof z, kind of the segment starting here)
-CAB = [
-    (-1.640, 0.56, 0.50, 0.985, 1.03, 'hatch'),
-    (-1.600, 0.66, 0.565, 0.985, 1.12, 'hatch'),
-    (-1.300, 0.69, 0.585, 0.98, 1.44, 'cpillar'),
-    (-1.050, 0.695, 0.59, 0.978, 1.46, 'quarter'),
-    (-0.880, 0.70, 0.595, 0.975, 1.47, 'dpillar'),
-    (-0.830, 0.70, 0.595, 0.975, 1.472, 'side'),
-    (-0.120, 0.70, 0.595, 0.97, 1.49, 'bpillar'),
-    (-0.020, 0.70, 0.595, 0.97, 1.493, 'side'),
-    (0.160, 0.70, 0.595, 0.965, 1.488, 'side_screen'),
-    (0.700, 0.695, 0.605, 0.96, 1.17, 'screen'),
-    (1.020, 0.66, 0.62, 0.95, 0.955, None),
+# fender sections: (y, inner x, outer x, bottom z, top z, exponent)
+FRONT_FENDER = [
+    (1.985, 0.40, 0.49, 0.45, 0.58, 2.2),
+    (1.900, 0.40, 0.62, 0.39, 0.67, 2.5),
+    (1.720, 0.40, 0.72, 0.34, 0.76, 2.8),
+    (1.450, 0.40, 0.765, 0.31, 0.86, 3.0),
+    (1.200, 0.40, 0.77, 0.30, 0.89, 3.0),
+    (0.950, 0.40, 0.76, 0.30, 0.83, 3.0),
+    (0.780, 0.40, 0.735, 0.30, 0.66, 2.8),
+    (0.680, 0.40, 0.72, 0.30, 0.48, 2.6),
+    (0.620, 0.40, 0.70, 0.30, 0.37, 2.4),
 ]
-SIDE_FRACS = (0.0, 0.09, 0.55, 1.0)
+REAR_FENDER = [
+    (-0.620, 0.40, 0.71, 0.30, 0.38, 2.4),
+    (-0.700, 0.40, 0.735, 0.30, 0.52, 2.6),
+    (-0.900, 0.40, 0.765, 0.30, 0.78, 2.9),
+    (-1.200, 0.40, 0.775, 0.30, 0.90, 3.0),
+    (-1.480, 0.40, 0.77, 0.31, 0.89, 3.0),
+    (-1.720, 0.40, 0.745, 0.34, 0.82, 2.8),
+    (-1.900, 0.40, 0.67, 0.40, 0.72, 2.6),
+    (-2.000, 0.40, 0.55, 0.46, 0.64, 2.4),
+    (-2.040, 0.40, 0.45, 0.50, 0.59, 2.2),
+]
 
 
 def _sgnpow(v, p):
     return math.copysign(abs(v) ** p, v)
 
 
-def tub_section(y, hw, zb, zt, e, n=N_SECTION):
-    zc, b = (zb + zt) / 2, (zt - zb) / 2
-    p = 2.0 / e
-    pts = []
-    for i in range(n):
-        t = 2 * math.pi * i / n - math.pi / 2
-        pts.append((hw * _sgnpow(math.cos(t), p), y, zc + b * _sgnpow(math.sin(t), p)))
-    return pts
-
-
-def _tub_at(y):
-    for a, b in zip(TUB[:-1], TUB[1:]):
+def _interp(table, y, keys):
+    rows = sorted(table)
+    if not (rows[0][0] <= y <= rows[-1][0]):
+        return None
+    for a, b in zip(rows[:-1], rows[1:]):
         if a[0] <= y <= b[0]:
-            t = (y - a[0]) / (b[0] - a[0])
-            return [a[k] + (b[k] - a[k]) * t for k in (1, 2, 3, 4)]
+            t = (y - a[0]) / (b[0] - a[0]) if b[0] > a[0] else 0.0
+            return [a[k] + (b[k] - a[k]) * t for k in keys]
     return None
 
 
-def tub_half_width(y, z):
-    """Half width of the body surface at (y, z) (0 outside the body)."""
-    s_ = _tub_at(y)
-    if s_ is None:
+# ---------------------------------------------------------------- shell
+def shell_section(y, hw, zb, zm, zt, et, eb, n=N_SECTION):
+    pts = []
+    for i in range(n):
+        t = 2 * math.pi * i / n - math.pi / 2
+        c, s = math.cos(t), math.sin(t)
+        if s >= 0:
+            p = 2.0 / et
+            pts.append((hw * _sgnpow(c, p), y, zm + (zt - zm) * _sgnpow(s, p)))
+        else:
+            p = 2.0 / eb
+            pts.append((hw * _sgnpow(c, p), y, zm + (zm - zb) * _sgnpow(s, p)))
+    return pts
+
+
+def shell_half_width(y, z):
+    r = _interp(SHELL, y, (1, 2, 3, 4, 5, 6))
+    if r is None:
         return 0.0
-    hw, zb, zt, e = s_
-    zc, h = (zb + zt) / 2, (zt - zb) / 2
-    s = abs(z - zc) / h
+    hw, zb, zm, zt, et, eb = r
+    if z >= zm:
+        s, e = (z - zm) / max(zt - zm, 1e-4), et
+    else:
+        s, e = (zm - z) / max(zm - zb, 1e-4), eb
     if s >= 1.0:
         return 0.0
     return hw * (1 - s ** e) ** (1.0 / e)
 
 
-def surface_y(x, z, front=True):
-    """Front- or rear-most body surface point at (x, z), by bisection along y."""
-    if front:
-        lo, hi = 0.5, TUB[-1][0]
-        if tub_half_width(lo, z) < abs(x):
+def shell_top(y):
+    r = _interp(SHELL, y, (4,))
+    return r[0] if r else 0.0
+
+
+def shell_surface_y(x, z, front=True):
+    """Front- or rear-most shell surface point at (x, z) by bisection along y; None if the shell never reaches it."""
+    lo = 0.0
+    hi = NOSE_Y if front else TAIL_Y
+    if shell_half_width(lo, z) < max(abs(x), 1e-3):
+        found = False
+        for k in range(1, 40):
+            yy = lo + (hi - lo) * k / 40
+            if shell_half_width(yy, z) >= max(abs(x), 1e-3):
+                lo, found = yy, True
+                break
+        if not found:
             return None
-        for _ in range(30):
-            mid = (lo + hi) / 2
-            if tub_half_width(mid, z) >= abs(x):
-                lo = mid
-            else:
-                hi = mid
-        return lo
-    lo, hi = -0.5, TUB[0][0]
-    if tub_half_width(lo, z) < abs(x):
-        return None
     for _ in range(30):
         mid = (lo + hi) / 2
-        if tub_half_width(mid, z) >= abs(x):
+        if shell_half_width(mid, z) >= max(abs(x), 1e-3):
             lo = mid
         else:
             hi = mid
     return lo
 
 
-def loft(mb, sections, mat_fn, close=True, smooth=True, flip=False):
-    """Quads between consecutive sections (equal point counts); ends closed with fans."""
+# ---------------------------------------------------------------- fenders
+def fender_section(y, xi, xo, zb, zt, e, side, n=24):
+    xc, hwx = (xi + xo) / 2, (xo - xi) / 2
+    zc, hz = (zb + zt) / 2, (zt - zb) / 2
+    p = 2.0 / e
+    pts = []
+    for i in range(n):
+        t = 2 * math.pi * i / n - math.pi / 2
+        pts.append((side * (xc + hwx * _sgnpow(math.cos(t), p)), y, zc + hz * _sgnpow(math.sin(t), p)))
+    return pts
+
+
+def fender_outer(table, y, z):
+    """Outer half width of a fender at (y, z), 0 if outside."""
+    r = _interp(table, y, (1, 2, 3, 4, 5))
+    if r is None:
+        return 0.0
+    xi, xo, zb, zt, e = r
+    xc, hwx = (xi + xo) / 2, (xo - xi) / 2
+    zc, hz = (zb + zt) / 2, (zt - zb) / 2
+    s = abs(z - zc) / hz
+    if s >= 1:
+        return 0.0
+    return xc + hwx * (1 - s ** e) ** (1.0 / e)
+
+
+def fender_surface_y(table, x, z, front=True):
+    ys = sorted(r[0] for r in table)
+    mid_y = (ys[0] + ys[-1]) / 2
+    lo, hi = (mid_y, ys[-1]) if front else (mid_y, ys[0])
+    if fender_outer(table, lo, z) < max(abs(x), 1e-3):
+        return None
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if fender_outer(table, mid, z) >= max(abs(x), 1e-3):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+# ---------------------------------------------------------------- generic helpers
+def loft(mb, sections, mat, close=True, smooth=True, flip=False):
     m = mb.m
     n = len(sections[0])
     base = len(mb.verts)
@@ -137,7 +202,7 @@ def loft(mb, sections, mat_fn, close=True, smooth=True, flip=False):
             a, b = base + k * n + i, base + k * n + j
             c, d = base + (k + 1) * n + j, base + (k + 1) * n + i
             q = (a, d, c, b)
-            mb.faces.append((q[::-1] if flip else q, mat_fn(k, i), None, False, smooth))
+            mb.faces.append((q[::-1] if flip else q, mat, None, False, smooth))
     if close:
         for k, rev in ((0, False), (len(sections) - 1, True)):
             sec = sections[k]
@@ -148,59 +213,7 @@ def loft(mb, sections, mat_fn, close=True, smooth=True, flip=False):
                 j = (i + 1) % n
                 a, b = base + k * n + i, base + k * n + j
                 f = (b, a, ci) if rev != flip else (a, b, ci)
-                mb.faces.append((f, mat_fn(k, i), None, False, smooth))
-
-
-def cab_section(y, hwb, hwt, zb, zt):
-    """Rounded trapezoid, 20 points: left side up, roof arc, roof span, right arc, right side down, bottom."""
-    r = min(0.08, (zt - zb) * 0.4)
-    pts = []
-    zs = [zb + (zt - r - zb) * f for f in SIDE_FRACS]
-    side_x = lambda z: hwb + (hwt - hwb) * min(1.0, max(0.0, (z - zb) / max(zt - r - zb, 1e-3)))
-    for z in zs:
-        pts.append((-side_x(z), y, z))
-    for k in range(1, 5):
-        a = math.pi - (math.pi / 2) * k / 4
-        pts.append((-(hwt - r) + r * math.cos(a), y, zt - r + r * math.sin(a)))
-    for k in range(1, 4):
-        pts.append((-(hwt - r) + 2 * (hwt - r) * k / 4, y, zt + 0.012 * math.sin(math.pi * k / 4)))
-    for k in range(0, 4):
-        a = math.pi / 2 - (math.pi / 2) * k / 4
-        pts.append(((hwt - r) + r * math.cos(a), y, zt - r + r * math.sin(a)))
-    for z in reversed(zs):
-        pts.append((side_x(z), y, z))
-    pts.append((0.0, y, zb - 0.03))
-    return pts
-
-
-def cab_zone(i):
-    if i in (0, 17):
-        return 'seal'
-    if i in (1, 2, 15, 16):
-        return 'side'
-    if 3 <= i <= 6 or 11 <= i <= 14:
-        return 'arc'
-    if 7 <= i <= 10:
-        return 'roof'
-    return 'bottom'
-
-
-def cab_mat(k, i):
-    kind = CAB[k][5] if k < len(CAB) else None
-    z = cab_zone(i)
-    if z == 'seal':
-        return 'car_trim'
-    if kind == 'hatch':
-        return 'car_glass' if z == 'roof' else PAINT
-    if kind in ('side', 'quarter'):
-        return 'car_glass' if z == 'side' else PAINT
-    if kind == 'side_screen':
-        return 'car_glass' if z in ('side', 'roof') else PAINT
-    if kind == 'screen':
-        return 'car_glass' if z == 'roof' else PAINT
-    if kind in ('bpillar', 'dpillar'):
-        return 'car_trim' if z == 'side' else PAINT
-    return PAINT
+                mb.faces.append((f, mat, None, False, smooth))
 
 
 def lathe_x(mb, mat, prof, c, side, seg=24, smooth=True):
@@ -222,179 +235,230 @@ def lathe_x(mb, mat, prof, c, side, seg=24, smooth=True):
             mb.faces.append((q, mat, None, False, smooth))
 
 
-def wheel(mb, x, y):
-    s = 1 if x > 0 else -1
-    R, w = WHEEL_R, 0.185
-    tyre = [(0.195, -w / 2), (0.24, -w / 2 - 0.004), (0.275, -w / 2 + 0.012), (R, -w / 2 + 0.035), (R, w / 2 - 0.035),
-            (0.275, w / 2 - 0.012), (0.24, w / 2 + 0.004), (0.195, w / 2)]
-    lathe_x(mb, 'car_tyre', tyre, (x, y, R), s, seg=32)
-    # plain 5-spoke alloy: recessed dish, rim lip, spokes, centre cap
-    rim = [(0.195, w / 2), (0.19, w / 2 - 0.012), (0.17, w / 2 - 0.03), (0.06, w / 2 - 0.035)]
-    lathe_x(mb, 'car_alloy', rim, (x, y, R), s, seg=28)
-    lathe_x(mb, 'car_trim', [(0.17, w / 2 - 0.032), (0.0, w / 2 - 0.04)], (x, y, R), s, seg=20)
-    for k in range(5):
-        a = 2 * math.pi * k / 5 + 0.3
-        p0 = Vector((x + s * (w / 2 - 0.02), y + 0.05 * math.cos(a), R + 0.05 * math.sin(a)))
-        p1 = Vector((x + s * (w / 2 - 0.028), y + 0.175 * math.cos(a), R + 0.175 * math.sin(a)))
-        mb.sweep('car_alloy', [tuple(p0), tuple(p1)], 0.024, seg=6)
-    lathe_x(mb, 'car_alloy', [(0.065, w / 2 - 0.03), (0.055, w / 2 - 0.012), (0.03, w / 2 - 0.006), (0.0, w / 2 - 0.004)],
-            (x, y, R), s, seg=16)
-
-
-def arch_cutter(collection):
-    mb = MeshBuilder()
-    for y in (-AXLE_Y, AXLE_Y):
-        mb.cyl('car_trim', (-1.2, y, WHEEL_R + 0.01), (1.2, y, WHEEL_R + 0.01), ARCH_R, seg=44, smooth=False)
-    return mb.build('arch_cutter', collection, bevel_width=0.0)
-
-
-def flank(y, z, off=0.0):
-    return tub_half_width(y, z) + off
-
-
-def flank_sweep(mb, pts, s, mat, r, off=0.004, seg=5):
-    out = [(s * flank(y, z, off), y, z) for (y, z) in pts if flank(y, z) > 0.05]
-    if len(out) > 1:
-        mb.sweep(mat, out, r, seg=seg)
-
-
-def arch_lips(mb):
-    for y0 in (-AXLE_Y, AXLE_Y):
-        for s in (-1, 1):
-            pts = []
-            for k in range(29):
-                a = math.radians(-8 + 196 * k / 28)
-                pts.append((y0 + (ARCH_R + 0.01) * math.cos(a), WHEEL_R + 0.01 + (ARCH_R + 0.01) * math.sin(a)))
-            pts = [p for p in pts if p[1] > 0.16]
-            flank_sweep(mb, pts, s, 'car_trim', 0.028, off=-0.004, seg=7)
-
-
-def wheel_wells(mb):
-    zc = WHEEL_R + 0.01
-    rr = ARCH_R - 0.006
-    angs = [math.radians(-12 + 204 * k / 20) for k in range(21)]
-    for y0 in (-AXLE_Y, AXLE_Y):
-        for k in range(20):
-            a0, a1 = angs[k], angs[k + 1]
-            p0 = (y0 + rr * math.cos(a0), zc + rr * math.sin(a0))
-            p1 = (y0 + rr * math.cos(a1), zc + rr * math.sin(a1))
-            mb.quad('car_trim', (-0.58, p0[0], p0[1]), (0.58, p0[0], p0[1]), (0.58, p1[0], p1[1]), (-0.58, p1[0], p1[1]))
-        for s in (-1, 1):
-            pts = [(s * 0.58, y0 + rr * math.cos(a), zc + rr * math.sin(a)) for a in angs]
-            pts.append((s * 0.58, y0, zc))
-            mb.poly('car_trim', pts if s > 0 else pts[::-1])
-
-
-def projected_patch(mb, mat, x0, x1, zlo, zhi, front, nu=10, nv=4, lift=0.005, uv=None):
-    """A grid patch laid onto the front or rear body surface over x in [x0, x1] and z in [zlo(x), zhi(x)]:
-    lamps, grille, intakes. Wraps around the corner by itself where the surface turns back along the flank."""
-    pts = {}
-    for i in range(nu + 1):
-        x = x0 + (x1 - x0) * i / nu
-        for j in range(nv + 1):
-            z = zlo(x) + (zhi(x) - zlo(x)) * j / nv
-            y = surface_y(x, z, front)
-            if y is not None:
-                pts[i, j] = (x, y + (lift if front else -lift), z)
-    for i in range(nu):
-        for j in range(nv):
-            if not all(k in pts for k in ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))):
-                continue
-            q = [pts[i, j], pts[i + 1, j], pts[i + 1, j + 1], pts[i, j + 1]]   # x right, z up: faces -y
-            uvs = None
-            if uv:
-                uvs = [uv(i / nu, j / nv), uv((i + 1) / nu, j / nv), uv((i + 1) / nu, (j + 1) / nv), uv(i / nu, (j + 1) / nv)]
-            if front:
+def lathe_y(mb, mat, prof, c, direction=1, seg=24, smooth=True):
+    """Revolve [(r, a)] around the y axis through c; a is the offset along direction (+1 forward, -1 back)."""
+    cx, cy, cz = c
+    base = len(mb.verts)
+    n = len(prof)
+    m = mb.m
+    for s in range(seg):
+        t = 2 * math.pi * s / seg
+        for (r, a) in prof:
+            mb.verts.append(m @ Vector((cx + r * math.cos(t), cy + a * direction, cz + r * math.sin(t))))
+    for s in range(seg):
+        s2 = (s + 1) % seg
+        for k in range(n - 1):
+            q = (base + s * n + k, base + s2 * n + k, base + s2 * n + k + 1, base + s * n + k + 1)
+            if direction > 0:
                 q = q[::-1]
-                uvs = uvs[::-1] if uvs else None
-            mb.poly(mat, q, uvs=uvs, smooth=True)
+            mb.faces.append((q, mat, None, False, smooth))
 
 
-def lights_and_front(mb):
+def radial_patch(mb, mat, outline, project, rings=4, uv=None):
+    """Fill a closed 2D outline with concentric rings toward its centre, each point projected onto the body by
+    project(u, v) -> 3D point or None. Quads with a missing corner are skipped. The outline's order sets the winding."""
+    n = len(outline)
+    cu = sum(p[0] for p in outline) / n
+    cv = sum(p[1] for p in outline) / n
+    grid = {}
+    for r in range(rings):
+        t = 1.0 - r / rings
+        for i in range(n):
+            u = cu + (outline[i][0] - cu) * t
+            v = cv + (outline[i][1] - cv) * t
+            grid[r, i] = project(u, v)
+    centre = project(cu, cv)
+    for r in range(rings):
+        for i in range(n):
+            j = (i + 1) % n
+            if r < rings - 1:
+                corners = [grid[r, i], grid[r, j], grid[r + 1, j], grid[r + 1, i]]
+            else:
+                corners = [grid[r, i], grid[r, j], centre]
+            if any(c is None for c in corners):
+                continue
+            mb.poly(mat, corners, smooth=True)
+
+
+def side_projector(s, lift):
+    def proj(y, z):
+        hw = shell_half_width(y, z)
+        if hw < 0.05:
+            return None
+        return (s * (hw + lift), y, z)
+    return proj
+
+
+def front_projector(lift):
+    def proj(x, z):
+        y = shell_surface_y(x, z, True)
+        return None if y is None else (x, y + lift, z)
+    return proj
+
+
+def rear_projector(lift):
+    def proj(x, z):
+        y = shell_surface_y(x, z, False)
+        return None if y is None else (x, y - lift, z)
+    return proj
+
+
+def rounded_outline(pts):
+    """Smooth a closed polygon of (u, v) control points (three Chaikin passes)."""
+    out = list(pts)
+    for _ in range(3):
+        new = []
+        for i in range(len(out)):
+            a, b = out[i], out[(i + 1) % len(out)]
+            new.append((0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]))
+            new.append((0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]))
+        out = new
+    return out
+
+
+def trim_loop(mb, mat, outline, proj, r):
+    pts = [proj(u, v) for (u, v) in outline]
+    pts = [p for p in pts if p]
+    if len(pts) > 3:
+        mb.sweep(mat, pts + pts[:1], r, seg=5, caps=False)
+
+
+# ---------------------------------------------------------------- glass
+DOOR_WINDOW = [(0.585, 1.005), (0.40, 1.33), (0.12, 1.385), (-0.18, 1.375), (-0.33, 1.32), (-0.345, 1.005)]
+QUARTER_WINDOW = [(-0.43, 1.02), (-0.43, 1.30), (-0.62, 1.325), (-0.82, 1.255), (-0.97, 1.10), (-0.95, 1.02)]
+
+
+def ccw(outline):
+    """Counter-clockwise version of a closed (u, v) outline."""
+    a = sum(outline[i][0] * outline[(i + 1) % len(outline)][1] - outline[(i + 1) % len(outline)][0] * outline[i][1]
+            for i in range(len(outline)))
+    return outline if a > 0 else outline[::-1]
+
+
+def side_windows(mb):
     for s in (-1, 1):
-        # swept-back headlamps: rounded at the inner end, wrapping round the corner toward the wing
-        lo = lambda x: 0.665 + 0.025 * (abs(x) - 0.40) / 0.37
-        hi = lambda x: 0.745 - 0.03 * ((abs(x) - 0.40) / 0.37) ** 1.5
-        xa, xb = (0.40, 0.775) if s > 0 else (-0.775, -0.40)
-        projected_patch(mb, 'car_trim', xa, xb, lambda x: lo(x) - 0.012, lambda x: hi(x) + 0.012, True, nu=16, nv=3, lift=0.004)
-        la, lb = (0.42, 0.765) if s > 0 else (-0.765, -0.42)
-        projected_patch(mb, 'car_lamp', la, lb, lo, hi, True, nu=16, nv=3, lift=0.009)
-        # amber side repeater on the wing
-        y, z = 1.45, 0.77
-        mb.sphere('car_amber', (s * flank(y, z, 0.002), y, z), 0.03, seg=8, rings=4, sz=(0.008, 0.035, 0.012))
-    # slim upper grille slot between the lamps, wide lower intake, fog-lamp blanks
-    projected_patch(mb, 'car_trim', -0.36, 0.36, lambda x: 0.66, lambda x: 0.70, True, nu=8, nv=2, lift=0.004)
-    projected_patch(mb, 'car_trim', -0.52, 0.52, lambda x: 0.29 + 0.03 * (abs(x) / 0.52) ** 2, lambda x: 0.40 - 0.01 * (abs(x) / 0.52),
-                    True, nu=12, nv=3, lift=0.004)
-    # front plate: flat, just proud of the bumper
-    y = surface_y(0.0, 0.48, True) + 0.012
-    mb.quad('car_plate', (0.26, y, 0.43), (-0.26, y, 0.43), (-0.26, y, 0.54), (0.26, y, 0.54),
+        for ctrl in (DOOR_WINDOW, QUARTER_WINDOW):
+            outline = ccw(rounded_outline(ctrl))
+            # seen from +x the (y, z) plane has y pointing left, so CCW in (y, z) faces -x: flip for the right side
+            radial_patch(mb, 'car_glass', outline[::-1] if s > 0 else outline, side_projector(s, 0.007), rings=4)
+            trim_loop(mb, 'car_chrome', outline, side_projector(s, 0.006), 0.011)
+
+
+def windscreen_and_rear_window(mb):
+    ws = ccw(rounded_outline([(-0.47, 1.06), (0.47, 1.06), (0.40, 1.24), (0.30, 1.40), (-0.30, 1.40), (-0.40, 1.24)]))
+    # seen from the front (+y) the (x, z) plane has x pointing left: CCW in (x, z) faces -y, so flip for the front
+    radial_patch(mb, 'car_glass', ws[::-1], front_projector(0.009), rings=5)
+    trim_loop(mb, 'car_chrome', ws, front_projector(0.011), 0.011)
+    rw = ccw(rounded_outline([(-0.36, 1.07), (0.36, 1.07), (0.40, 1.17), (0.30, 1.26), (-0.30, 1.26), (-0.40, 1.17)]))
+    radial_patch(mb, 'car_glass', rw, rear_projector(0.012), rings=5)
+    trim_loop(mb, 'car_chrome', rw, rear_projector(0.014), 0.010)
+
+
+# ---------------------------------------------------------------- lamps, bumpers, details
+def headlamps_and_front(mb):
+    for s in (-1, 1):
+        x, z = s * 0.575, 0.665
+        y = fender_surface_y(FRONT_FENDER, x, z, True) or 1.8
+        # lamp bucket emerging from the fender, a chrome ring and a domed lens
+        mb.cyl(PAINT, (x, y - 0.18, z), (x, y + 0.02, z), 0.112, seg=24)
+        lathe_y(mb, 'car_chrome', [(0.112, 0.02), (0.118, 0.032), (0.104, 0.046), (0.092, 0.044)], (x, y, z), 1, seg=24)
+        lathe_y(mb, 'car_lamp', [(0.094, 0.04), (0.075, 0.062), (0.04, 0.074), (0.0, 0.077)], (x, y, z), 1, seg=24)
+        # bullet indicator on top of the fender
+        yi, zi = 1.36, 0.875
+        mb.sphere('car_chrome', (s * 0.60, yi, zi), 0.035, seg=10, rings=5, sz=(0.03, 0.06, 0.03))
+        mb.sphere('car_amber', (s * 0.60, yi + 0.045, zi), 0.026, seg=10, rings=5, sz=(0.024, 0.03, 0.024))
+        # small horn grille below the headlamp, on the front valance
+        hx, hz = s * 0.30, 0.52
+        hy = shell_surface_y(hx, hz, True)
+        if hy:
+            ring = []
+            for k in range(17):
+                a = 2 * math.pi * k / 16
+                px, pz = hx + 0.06 * math.cos(a), hz + 0.035 * math.sin(a)
+                ring.append((px, (shell_surface_y(px, pz, True) or hy) + 0.006, pz))
+            mb.sweep('car_chrome', ring, 0.007, seg=4, caps=False)
+            for k in range(3):
+                zz = hz - 0.02 + k * 0.02
+                pts = [(hx + dx, (shell_surface_y(hx + dx, zz, True) or hy) + 0.004, zz) for dx in (-0.045, 0.0, 0.045)]
+                mb.sweep('car_trim', pts, 0.006, seg=4)
+    # plain chrome strip down the centre of the bonnet, and the bonnet handle
+    strip = [(0.0, y, shell_top(y) + 0.004) for y in [0.95 + 0.1 * k for k in range(10)]]
+    mb.sweep('car_chrome', strip, 0.009, seg=5)
+    yh = shell_surface_y(0.0, 0.74, True)
+    if yh:
+        mb.sweep('car_chrome', [(-0.07, yh + 0.012, 0.74), (0.0, yh + 0.02, 0.745), (0.07, yh + 0.012, 0.74)], 0.012, seg=6)
+    hood = rounded_outline([(-0.40, 0.70), (0.40, 0.70), (0.44, 0.80), (0.42, 0.93), (-0.42, 0.93), (-0.44, 0.80)])
+    trim_loop(mb, 'car_trim', hood, front_projector(0.003), 0.004)
+
+
+def bumpers(mb):
+    def blade(y_centre, y_end, z, half=0.80):
+        pts = []
+        for k in range(17):
+            t = -1 + 2 * k / 16
+            pts.append((half * t, y_end + (y_centre - y_end) * (1 - t * t) ** 0.5, z))
+        return pts
+    for (yc, ye, d) in ((2.09, 1.94, 1), (-2.13, -1.98, -1)):
+        for dz in (0.0, 0.035):
+            mb.sweep('car_chrome', blade(yc, ye, 0.44 + dz), 0.024, seg=8)
+        for xo in (-0.36, 0.36):
+            yb = ye + (yc - ye) * (1 - (xo / 0.8) ** 2) ** 0.5
+            mb.sweep('car_chrome', [(xo, yb + 0.02 * d, 0.36), (xo, yb + 0.03 * d, 0.47), (xo, yb + 0.015 * d, 0.62)], 0.026, seg=8)
+            ya, yb2 = sorted((yb - 0.14 * d, yb))
+            mb.box('car_trim', (xo - 0.03, ya, 0.42), (xo + 0.03, yb2, 0.46), bevel=False)
+    # front plate on the bumper, rear plate on the engine lid
+    mb.quad('car_plate', (0.24, 2.118, 0.47), (-0.24, 2.118, 0.47), (-0.24, 2.118, 0.57), (0.24, 2.118, 0.57),
             uvs=((1, 0), (0, 0), (0, 1), (1, 1)))
-    # wipers parked at the base of the windscreen
-    for x0, x1 in ((-0.55, 0.0), (-0.02, 0.5)):
-        mb.sweep('car_trim', [(x0, 0.99, 0.975), ((x0 + x1) / 2, 0.985, 0.98), (x1, 0.97, 0.99)], 0.008, seg=4)
-
-
-def rear(mb):
-    for s in (-1, 1):
-        # vertical tail lamps at the hatch corners, wrapping onto the flank
-        xa, xb = (0.54, 0.735) if s > 0 else (-0.735, -0.54)
-        projected_patch(mb, 'car_trim', xa - 0.012 * s, xb, lambda x: 0.735, lambda x: 0.985, False, nu=8, nv=6, lift=0.004)
-        projected_patch(mb, 'car_tail', xa, xb, lambda x: 0.815, lambda x: 0.975, False, nu=8, nv=5, lift=0.008)
-        projected_patch(mb, 'car_amber', xa, xb, lambda x: 0.745, lambda x: 0.81, False, nu=8, nv=1, lift=0.008)
-    # small spoiler lip over the hatch glass, with the third brake light under it
-    mb.box(PAINT, (-0.54, -1.37, 1.425), (0.54, -1.25, 1.452), bevel=True)
-    mb.box('car_tail', (-0.15, -1.375, 1.41), (0.15, -1.355, 1.428), bevel=False)
-    # rear plate and hatch handle
-    y = surface_y(0.0, 0.68, False) - 0.012
-    mb.quad('car_plate', (-0.26, y, 0.62), (0.26, y, 0.62), (0.26, y, 0.73), (-0.26, y, 0.73),
+    y = (shell_surface_y(0.0, 0.70, False) or -2.0) - 0.012
+    mb.quad('car_plate', (-0.24, y, 0.64), (0.24, y, 0.64), (0.24, y, 0.74), (-0.24, y, 0.74),
             uvs=((0, 0), (1, 0), (1, 1), (0, 1)))
-    yh = surface_y(0.0, 0.79, False) - 0.008
-    mb.box('car_chrome', (-0.16, yh - 0.015, 0.775), (0.16, yh + 0.01, 0.795), bevel=False)
-    # hatch shut lines and the bumper's top crease
-    projected_patch(mb, 'car_trim', -0.62, 0.62, lambda x: 0.598, lambda x: 0.606, False, nu=12, nv=1, lift=0.003)
-    for xa in (-0.535, 0.527):
-        projected_patch(mb, 'car_trim', xa, xa + 0.008, lambda x: 0.606, lambda x: 0.975, False, nu=1, nv=8, lift=0.003)
-    # black lower diffuser strip in the bumper
-    projected_patch(mb, 'car_trim', -0.62, 0.62, lambda x: 0.26, lambda x: 0.34, False, nu=10, nv=2, lift=0.004)
-    # rear wiper on the hatch glass
-    mb.sweep('car_trim', [(0.0, -1.585, 1.14), (-0.30, -1.43, 1.315)], 0.007, seg=4)
+    mb.box('car_chrome', (-0.09, y - 0.035, 0.745), (0.09, y + 0.005, 0.785), bevel=True)       # plate lamp hood
 
 
-def sides(mb):
+def rear_details(mb):
     for s in (-1, 1):
-        # black sill trim between the arches
-        sill = [(y_, 0.24) for y_ in [AXLE_Y - ARCH_R - 0.02 - k * 0.1 for k in range(int((2 * (AXLE_Y - ARCH_R) - 0.04) / 0.1) + 1)]]
-        flank_sweep(mb, sill, s, 'car_trim', 0.04, off=-0.012, seg=6)
-        # subtle shoulder feature line from the headlamp back to the tail lamp
-        shoulder = [(y_, 0.86 + 0.04 * (1.6 - y_) / 3.2) for y_ in [1.6 - k * 0.1 for k in range(32)]]
-        flank_sweep(mb, shoulder, s, PAINT, 0.008, off=-0.002, seg=5)
-        # door shut lines: front door, rear door with its curve over the rear arch
-        front_door = [(0.80, 0.95), (0.80, 0.80), (0.80, 0.60), (0.79, 0.42), (0.77, 0.30)]
-        bpost = [(-0.07, 0.29), (-0.075, 0.50), (-0.08, 0.75), (-0.085, 0.95)]
-        rear_door = [(-0.86, 0.95), (-0.86, 0.80), (-0.85, 0.70), (-0.80, 0.62), (-0.77, 0.50), (-0.77, 0.30)]
-        for line in (front_door, bpost, rear_door):
-            dense = []
-            for (a, b) in zip(line[:-1], line[1:]):
-                for k in range(4):
-                    t = k / 4
-                    dense.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
-            dense.append(line[-1])
-            flank_sweep(mb, dense, s, 'car_trim', 0.006, off=0.0, seg=4)
-        # pull handles
-        for y in (0.0, -0.78):
-            x = s * flank(y, 0.90, 0.006)
-            mb.sweep('car_trim', [(x, y, 0.90), (x, y - 0.12, 0.90)], 0.013, seg=6)
-        # door mirror on the front door
-        my, mz = 0.60, 1.0
-        mb.box('car_trim', (s * 0.69, my - 0.03, mz - 0.03), (s * 0.79, my + 0.06, mz + 0.03), bevel=True)       # sail
-        mb.box(PAINT, (s * 0.76, my - 0.045, mz - 0.005), (s * 0.91, my + 0.045, mz + 0.1), bevel=True)          # housing
-        mb.box('car_glass', (s * 0.772, my - 0.051, mz + 0.008), (s * 0.898, my - 0.04, mz + 0.088), bevel=False)
-        # small pastry roundel on the front door (~0.28 m), the only branding
-        badge(mb, s, 0.36, 0.64, 0.14)
-    # fuel flap on the right rear quarter
-    pts = [(-1.30 + 0.07 * math.cos(2 * math.pi * k / 16), 0.86 + 0.07 * math.sin(2 * math.pi * k / 16)) for k in range(17)]
-    flank_sweep(mb, pts, 1, 'car_trim', 0.0035, off=0.0015, seg=4)
+        x, z = s * 0.60, 0.67
+        y = fender_surface_y(REAR_FENDER, x, z, False) or -1.95
+        ring = [(x + 0.05 * math.cos(2 * math.pi * k / 20), y - 0.006, z + 0.095 * math.sin(2 * math.pi * k / 20)) for k in range(21)]
+        mb.sweep('car_chrome', ring, 0.009, seg=5, caps=False)
+        mb.sphere('car_tail', (x, y - 0.004, z), 0.05, seg=14, rings=7, sz=(0.046, 0.03, 0.09))
+    # engine-lid louvres, shut line and handle
+    for s in (-1, 1):
+        for k in range(4):
+            xx = s * (0.12 + 0.06 * k)
+            slot = ccw(rounded_outline([(xx - 0.017, 0.94), (xx + 0.017, 0.94), (xx + 0.017, 1.02), (xx - 0.017, 1.02)]))
+            radial_patch(mb, 'car_trim', slot, rear_projector(0.003), rings=2)
+    lid = rounded_outline([(-0.42, 0.66), (0.42, 0.66), (0.46, 0.84), (0.40, 1.05), (-0.40, 1.05), (-0.46, 0.84)])
+    trim_loop(mb, 'car_trim', lid, rear_projector(0.003), 0.004)
+    yh = (shell_surface_y(0.0, 0.84, False) or -2.0) - 0.014
+    mb.sweep('car_chrome', [(-0.07, yh + 0.004, 0.84), (0.0, yh - 0.004, 0.845), (0.07, yh + 0.004, 0.84)], 0.012, seg=6)
+
+
+def doors(mb):
+    for s in (-1, 1):
+        ctrl = [(0.60, 1.0), (0.66, 0.72), (0.62, 0.37), (-0.34, 0.37), (-0.36, 1.0)]
+        pts = []
+        for (a, b) in zip(ctrl[:-1], ctrl[1:]):
+            for k in range(6):
+                t = k / 6
+                pts.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+        pts.append(ctrl[-1])
+        proj = side_projector(s, 0.002)
+        line = [proj(y, z) for (y, z) in pts]
+        line = [p for p in line if p]
+        mb.sweep('car_trim', line, 0.0045, seg=4)
+        # chrome handle, round mirror on a stalk
+        hy, hz = -0.22, 0.93
+        hx = s * (shell_half_width(hy, hz) + 0.012)
+        mb.sweep('car_chrome', [(hx, hy, hz), (hx, hy + 0.11, hz)], 0.012, seg=6)
+        my, mz = 0.55, 1.02
+        mx = s * shell_half_width(my, mz)
+        mb.sweep('car_chrome', [(mx, my, mz), (mx + s * 0.07, my - 0.01, mz + 0.06), (mx + s * 0.11, my - 0.02, mz + 0.1)], 0.009, seg=5)
+        mc = (mx + s * 0.12, my - 0.03, mz + 0.13)
+        lathe_y(mb, 'car_chrome', [(0.0, 0.03), (0.04, 0.035), (0.058, 0.02), (0.06, 0.0)], mc, 1, seg=16)
+        lathe_y(mb, 'car_glass', [(0.06, 0.0), (0.04, -0.004), (0.0, -0.006)], mc, 1, seg=16)
+        # the subtle branding: a small pastry roundel on the door
+        badge(mb, s, 0.12, 0.72, 0.13)
 
 
 def badge(mb, s, y, z, r):
@@ -402,63 +466,107 @@ def badge(mb, s, y, z, r):
     for k in range(24):
         t = 2 * math.pi * k / 24
         yy, zz = y + r * math.cos(t), z + r * math.sin(t)
-        pts.append((s * (tub_half_width(yy, zz) + 0.003), yy, zz))
+        pts.append((s * (shell_half_width(yy, zz) + 0.004), yy, zz))
         uvs.append((0.5 + 0.34 * math.cos(t), 0.5 + 0.34 * math.sin(t)))
     if s < 0:
         pts, uvs = pts[::-1], uvs[::-1]
     mb.poly('car_box', pts, uvs=uvs)
 
 
+def running_boards(mb):
+    for s in (-1, 1):
+        x0, x1 = sorted((s * 0.55, s * 0.745))
+        mb.box(PAINT, (x0, -0.66, 0.29), (x1, 0.68, 0.315), bevel=True)
+        mb.box('car_trim', (x0 + 0.01, -0.64, 0.315), (x1 - 0.01, 0.66, 0.335), bevel=False)
+        xe = s * 0.745
+        mb.sweep('car_chrome', [(xe, -0.64, 0.322), (xe, 0.66, 0.322)], 0.008, seg=4)
+
+
+def wheel(mb, x, y):
+    s = 1 if x > 0 else -1
+    R, w = WHEEL_R, 0.15
+    tyre = [(0.19, -w / 2), (0.25, -w / 2 - 0.004), (0.29, -w / 2 + 0.015), (R, -w / 2 + 0.04), (R, w / 2 - 0.04),
+            (0.29, w / 2 - 0.015), (0.27, w / 2 - 0.004)]
+    lathe_x(mb, 'car_tyre', tyre, (x, y, R), s, seg=28)
+    lathe_x(mb, 'car_cream', [(0.262, w / 2 - 0.002), (0.245, w / 2 + 0.002), (0.226, w / 2 + 0.002)], (x, y, R), s, seg=28)   # whitewall band
+    lathe_x(mb, 'car_tyre', [(0.226, w / 2 + 0.002), (0.21, w / 2 + 0.001), (0.20, w / 2)], (x, y, R), s, seg=28)
+    lathe_x(mb, 'car_cream', [(0.20, w / 2), (0.19, w / 2 - 0.01), (0.15, w / 2 - 0.02), (0.12, w / 2 - 0.018)], (x, y, R), s, seg=28)
+    lathe_x(mb, 'car_chrome', [(0.125, w / 2 - 0.02), (0.12, w / 2 + 0.0), (0.095, w / 2 + 0.03), (0.05, w / 2 + 0.045),
+                               (0.0, w / 2 + 0.05)], (x, y, R), s, seg=24)
+    lathe_x(mb, 'car_tyre', [(0.0, -w / 2), (0.19, -w / 2)], (x, y, R), -s, seg=20)
+
+
 def interior(mb):
-    """Seats, dashboard and a left-hand-drive steering wheel, seen through the tinted glass."""
-    mb.box('car_trim', (-0.66, -1.45, 0.42), (0.66, 0.95, 0.5), bevel=False)             # floor
-    mb.box('car_trim', (-0.66, 0.55, 0.75), (0.66, 0.95, 1.0), bevel=True)               # dashboard
-    for x in (-0.36, 0.36):
-        mb.box('car_seat', (x - 0.24, -0.35, 0.5), (x + 0.24, 0.15, 0.66), bevel=True)    # cushion
-        mb.box('car_seat', (x - 0.23, -0.42, 0.62), (x + 0.23, -0.30, 1.22), bevel=True)  # backrest
-        mb.box('car_seat', (x - 0.12, -0.44, 1.22), (x + 0.12, -0.34, 1.36), bevel=True)  # headrest
-    mb.box('car_seat', (-0.62, -1.25, 0.5), (0.62, -0.75, 0.66), bevel=True)             # rear bench
-    mb.box('car_seat', (-0.62, -1.32, 0.62), (0.62, -1.2, 1.15), bevel=True)
-    c = Vector((-0.36, 0.42, 1.0))
-    ring = [(c.x + 0.18 * math.cos(2 * math.pi * k / 20), c.y + 0.06 * math.sin(2 * math.pi * k / 20),
-             c.z + 0.16 * math.sin(2 * math.pi * k / 20)) for k in range(21)]
-    mb.sweep('car_trim', ring, 0.015, seg=6, caps=False)
-    mb.sweep('car_trim', [tuple(c), (-0.36, 0.62, 0.88)], 0.025, seg=6)
+    mb.box('car_trim', (-0.6, -1.25, 0.38), (0.6, 0.85, 0.44), bevel=False)
+    mb.box(PAINT, (-0.44, 0.52, 0.80), (0.44, 0.76, 0.95), bevel=True)                     # body-colour dashboard
+    for x in (-0.3, 0.3):
+        mb.box('car_seat', (x - 0.22, -0.40, 0.44), (x + 0.22, 0.10, 0.60), bevel=True)
+        mb.box('car_seat', (x - 0.21, -0.48, 0.56), (x + 0.21, -0.36, 1.15), bevel=True)
+    mb.box('car_seat', (-0.56, -1.15, 0.44), (0.56, -0.70, 0.60), bevel=True)
+    mb.box('car_seat', (-0.56, -1.23, 0.56), (0.56, -1.10, 1.08), bevel=True)
+    c = Vector((-0.3, 0.45, 1.0))
+    ring = [(c.x + 0.19 * math.cos(2 * math.pi * k / 20), c.y + 0.05 * math.sin(2 * math.pi * k / 20),
+             c.z + 0.18 * math.sin(2 * math.pi * k / 20)) for k in range(21)]
+    mb.sweep('car_cream', ring, 0.011, seg=5, caps=False)
+    mb.sweep('car_trim', [tuple(c), (-0.3, 0.7, 0.86)], 0.02, seg=6)
+
+
+# ---------------------------------------------------------------- assembly
+def arch_cutter(collection, axle_y):
+    mb = MeshBuilder()
+    for s in (-1, 1):
+        a, b = sorted((s * 0.40, s * 1.2))
+        mb.cyl('car_trim', (a, axle_y, WHEEL_R + 0.02), (b, axle_y, WHEEL_R + 0.02), WHEEL_R + 0.055, seg=40, smooth=False)
+    return mb.build('cutter', collection, bevel_width=0.0)
+
+
+def cut(obj, collection):
+    for axle_y in (AXLE_Y, -AXLE_Y):
+        c = arch_cutter(collection, axle_y)
+        mod = obj.modifiers.new('arch', 'BOOLEAN')
+        mod.operation = 'DIFFERENCE'
+        mod.object = c
+        mod.solver = 'EXACT'
+        apply_modifiers(obj)
+        bpy.data.objects.remove(c)
 
 
 def build(collection):
-    # 1. body: lofted lower body with the arches cut out
-    tub = MeshBuilder()
-    loft(tub, [tub_section(*s) for s in TUB], lambda k, i: PAINT)
-    body = tub.build('microcar_body', collection, bevel_width=0.0, smooth_angle=70.0)
-    cutter = arch_cutter(collection)
-    mod = body.modifiers.new('arches', 'BOOLEAN')
-    mod.operation = 'DIFFERENCE'
-    mod.object = cutter
-    mod.solver = 'EXACT'
-    apply_modifiers(body)
-    bpy.data.objects.remove(cutter)
-
-    # 2. glasshouse, wheels and details
+    parts = []
+    shell = MeshBuilder()
+    loft(shell, [shell_section(*s) for s in SHELL], PAINT)
+    o = shell.build('car_shell', collection, bevel_width=0.0, smooth_angle=75.0)
+    cut(o, collection)
+    parts.append(o)
+    for table in (FRONT_FENDER, REAR_FENDER):
+        for s in (-1, 1):
+            fm = MeshBuilder()
+            secs = [fender_section(y, xi, xo, zb, zt, e, s) for (y, xi, xo, zb, zt, e) in sorted(table)]
+            loft(fm, secs, PAINT, flip=(s < 0))
+            f = fm.build('car_fender', collection, bevel_width=0.0, smooth_angle=75.0)
+            cut(f, collection)
+            parts.append(f)
     mb = MeshBuilder()
-    loft(mb, [cab_section(y, hwb, hwt, zb, zt) for (y, hwb, hwt, zb, zt, _) in CAB], cab_mat, flip=True)
-    for x in (-WHEEL_X, WHEEL_X):
-        for y in (-AXLE_Y, AXLE_Y):
-            wheel(mb, x, y)
-    wheel_wells(mb)
-    arch_lips(mb)
-    lights_and_front(mb)
-    rear(mb)
-    sides(mb)
+    for (y, track) in ((AXLE_Y, TRACK_F), (-AXLE_Y, TRACK_R)):
+        for s in (-1, 1):
+            wheel(mb, s * track / 2, y)
+    side_windows(mb)
+    windscreen_and_rear_window(mb)
+    headlamps_and_front(mb)
+    bumpers(mb)
+    rear_details(mb)
+    doors(mb)
+    running_boards(mb)
     interior(mb)
-    rest = mb.build('microcar_parts', collection, bevel_width=0.01, bevel_segments=1, smooth_angle=60.0)
+    parts.append(mb.build('car_parts', collection, bevel_width=0.008, bevel_segments=1, smooth_angle=60.0))
 
-    for o in bpy.context.view_layer.objects:
-        o.select_set(False)
-    body.select_set(True)
-    rest.select_set(True)
-    bpy.context.view_layer.objects.active = body
+    for ob in bpy.context.view_layer.objects:
+        ob.select_set(False)
+    for p in parts:
+        p.select_set(True)
+    bpy.context.view_layer.objects.active = parts[0]
     bpy.ops.object.join()
-    body.name = 'microcar'
-    body.data.name = 'microcar'
-    return body
+    car = parts[0]
+    car.name = 'microcar'
+    car.data.name = 'microcar'
+    return car

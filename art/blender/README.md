@@ -69,35 +69,36 @@ Raw size breakdown: positions 18.9 MB, normals 18.9 MB, UVs 12.6 MB, colours 6.3
 
 ## Hero car (`microcar.py`, exported as `microcar.glb`)
 
-An ordinary five-door European city hatchback, slightly compact for the game. It is generic: no make or model, no
-brand-like grille, logo or signature lamps.
-- **Shape:** two-box, with a short bonnet, a raked windscreen and a roof that dips toward the rear. Sloped hatch glass
-  under a small spoiler lip with the third brake light.
-- **Glasshouse:** front and rear door glass, a small rear quarter glass and the hatch glass, with A, B and C pillars.
-  The B pillar is black, and every window has a dark belt seal. The glass is tinted and translucent, so the seats,
-  dashboard and steering wheel (left-hand drive) show through.
-- **Body:** body-coloured bumpers with black intakes, black arch lips and sills, a shoulder line, door shut lines and
-  pull handles, mirrors, a fuel flap, and hatch shut lines.
-- **Lights and plates:** swept-back headlamps projected onto the body corners, vertical tail lamps with amber
-  indicators, and blank EU-style plates (blue band, no characters).
-- **Wheels:** plain 5-spoke alloys.
-- **Paint and branding:** soft teal; the only branding is a 0.28 m pastry roundel on each front door.
+A small, charming old car clearly inspired by the classic Beetle, in the STYLE-C look. It has no real-world badges,
+logos or VW emblem; the bonnet carries only a plain chrome strip.
+- **Body:** one continuous rounded arch in side profile, made of a short rounded bonnet, a small fairly upright
+  windscreen, a domed roof and a long rounded engine lid, with strong tumblehome.
+- **Fenders:** four separate bulbous fenders standing proud of the body, with round chrome-ringed headlamps in the
+  front ones and upright oval tail lamps on the rear ones. Running boards with black rubber tops sit between them.
+- **Glass:** a curved-top door window and a small quarter window each side, the windscreen and a small oval rear
+  window, all with thin chrome trim. The glass is translucent, showing two front seats, a rear bench, a thin steering
+  wheel on the left and a body-colour dashboard.
+- **Details:** chrome blade bumpers with overriders, cream steel wheels with domed chrome hubcaps and whitewall tyres,
+  round door mirrors, chrome handles, horn grilles, bullet indicators on the front fenders, louvres on the engine lid,
+  and blank EU-style plates.
+- **Paint:** soft pastel mint (`car_paint`, #A6D1BD) with cream wheels.
+- **Branding:** subtle only, a 0.26 m pastry roundel on each door.
 
 | | Blender | glTF |
 |---|---|---|
 | Origin | ground, midway between the axles | same |
 | Facing | +Y | -Z |
-| Length / width / height | 3.55 m / 1.62 m (1.82 m with mirrors) / 1.50 m | |
-| Wheelbase | 2.36 m (axles at y = ±1.18) | z = ∓1.18 |
-| Overhangs | front 0.68 m, rear 0.51 m | |
-| Wheel radius = axle height | 0.29 m | y = 0.29 |
-| Track | 1.40 m (wheel centres x = ±0.70) | |
-| Ground clearance | 0.14 m | |
-| Triangles | 11,116 | |
+| Wheelbase | 2.40 m (axles at y = ±1.20) | z = ∓1.20 |
+| Body nose / tail | y = +2.00 / -2.05 (bumpers +2.12 / -2.16) | z = -2.00 / +2.05 |
+| Overall length | 4.05 m body, ~4.28 m over the bumpers | |
+| Width / height | 1.54 m over the fenders, 1.40 m body / 1.50 m | |
+| Wheel radius = axle height | 0.31 m | y = 0.31 |
+| Track | 1.31 m front, 1.35 m rear | |
+| Ground clearance | ~0.29 m (running boards, the lowest part of the body) | |
 
-The glass material `car_glass` has alpha 0.62 (glTF `alphaMode` BLEND). Studio previews (front three-quarter, side,
-rear three-quarter, rear): `art/renders/car/`. Regenerate them with `car_preview.py`, and the export with
-`build_proof.py -- --car-only`. In the scene the car is parked at (0.85, 7.0, road), pitched to the slope.
+Studio previews (front three-quarter, side, rear three-quarter, rear) are in `art/renders/car/beetle_*.png`.
+Regenerate them with `car_preview.py`, and the export with `build_proof.py -- --car-only`. In the scene the car is
+parked at (0.85, 7.0, road), pitched to the slope.
 
 ## Review cameras (Blender coordinates: X west, Y downhill/south, Z up; vertical FOV)
 
