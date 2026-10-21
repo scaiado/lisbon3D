@@ -55,9 +55,9 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
   if (view === 'carside') {
     // Side profile from the far pavement at waist height (the Bica is only 6 m wide, so the camera cannot back
     // further off), with the right-hand façades behind the car.
-    const position = car.position.clone().add(new Vector3(-3.7, 0.85, 0.1));
-    const target = car.position.clone().add(new Vector3(0, 0.9, 0.1));
-    return { position, target, fov: 44, focus: 3.7 };
+    const position = car.position.clone().add(new Vector3(-3.5, 0.9, -0.1));
+    const target = car.position.clone().add(new Vector3(0, 0.75, -0.1));
+    return { position, target, fov: 54, focus: 3.5 };
   }
   const fixed = FIXED_VIEWS[view];
   return { position: new Vector3(...fixed.position), target: new Vector3(...fixed.target), fov: fixed.fov, focus: fixed.focus };
