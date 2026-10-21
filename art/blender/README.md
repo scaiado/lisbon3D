@@ -50,9 +50,9 @@ and calçada, 1024 for most others, 256–512 for small ones. Every texture is l
 | Step | Time |
 |---|---|
 | Street + 34 buildings + funicular/backdrop geometry | ~9 s |
-| AO bake (38 objects, 48 samples, CPU) | 27 s |
-| Cycles renders 1920×1080, 96 samples | 108 s / 133 s / 81 s |
-| Whole run | 6 min |
+| AO bake (38 objects, 48 samples, CPU) | 29 s |
+| Cycles renders 1920×1080, 96 samples | 122 s / 152 s / 92 s |
+| Whole run | 7 min |
 
 | Output | Triangles | Size |
 |---|---|---|
@@ -66,9 +66,10 @@ e03 20.8k, e04 49.2k, e05 25.6k, e06 34.7k triangles. The derived variants are 1
 the 300 target. The optimizer's join-per-material step needs to bring that under the target, or the variants can share
 materials more aggressively.
 
-## Known issues in the Blender target renders (first pass)
+## Blender target renders (second pass)
 
-- Views 1 and 2 are underexposed: the low sun leaves the narrow street almost entirely in shade, and the fill is too weak.
-- There is no sky gradient, haze or bloom in Cycles: the world is a flat colour. The far-shore and bridge cards barely show (view 3: top edge only).
-- View 3 (rooftops to the river) is the strongest so far: tile geometry, dormers, chimneys and the roofline stepping down all read.
-- The mid-ground blocks look flat up close at the right of view 3.
+- Sun 34° up, almost straight down the street; camera rays see the painted `sky` texture, and lighting rays get a
+  stronger blue-violet fill. Warm haze comes from the mist pass via a compositor node group (start 35 m, depth 900 m).
+- View 1 and view 2 are now sunlit and warm with coloured shade. View 3 shows haze over the river.
+- Open issues: the plaster normal map reads too lumpy in the close view (view 2). The far shore and bridge are still faint
+  at the top edge of view 3. The mid-ground blocks look flat up close at the right of view 3.

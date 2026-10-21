@@ -33,11 +33,68 @@ def setup_light(collection):
     world = bpy.context.scene.world or bpy.data.worlds.new('World')
     bpy.context.scene.world = world
     world.use_nodes = True
-    nt = world.node_tree
-    bg = nt.nodes.get('Background') or nt.nodes.new('ShaderNodeBackground')
-    bg.inputs['Color'].default_value = (*Mt.hex_lin('#7F8CC0'), 1.0)   # blue-violet sky fill
-    bg.inputs['Strength'].default_value = 0.9
+    sky_world(world)
+    haze()
     return sun
+
+
+def sky_world(world):
+    """Camera rays see the painted 'sky' texture (mapped by azimuth / elevation); lighting rays get a
+    blue-violet fill so the shade stays coloured."""
+    from . import textures as T
+    nt = world.node_tree
+    nt.nodes.clear()
+    n = nt.nodes.new
+    tc = n('ShaderNodeTexCoord')
+    sep = n('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Generated'], sep.inputs[0])
+    at = n('ShaderNodeMath'); at.operation = 'ARCTAN2'
+    nt.links.new(sep.outputs['Y'], at.inputs[0]); nt.links.new(sep.outputs['X'], at.inputs[1])
+    u = n('ShaderNodeMath'); u.operation = 'MULTIPLY_ADD'
+    u.inputs[1].default_value = 1 / (2 * math.pi); u.inputs[2].default_value = 0.5
+    nt.links.new(at.outputs[0], u.inputs[0])
+    v = n('ShaderNodeMath'); v.operation = 'MAXIMUM'; v.inputs[1].default_value = 0.0
+    nt.links.new(sep.outputs['Z'], v.inputs[0])
+    comb = n('ShaderNodeCombineXYZ')
+    nt.links.new(u.outputs[0], comb.inputs['X']); nt.links.new(v.outputs[0], comb.inputs['Y'])
+    img = n('ShaderNodeTexImage'); img.image = T.get('sky'); img.extension = 'EXTEND'
+    nt.links.new(comb.outputs[0], img.inputs['Vector'])
+    bg_cam = n('ShaderNodeBackground'); bg_cam.inputs['Strength'].default_value = 1.0
+    nt.links.new(img.outputs['Color'], bg_cam.inputs['Color'])
+    bg_fill = n('ShaderNodeBackground'); bg_fill.inputs['Strength'].default_value = 1.25
+    bg_fill.inputs['Color'].default_value = (*Mt.hex_lin('#8A94C4'), 1.0)   # blue-violet sky fill
+    lp = n('ShaderNodeLightPath')
+    mix = n('ShaderNodeMixShader')
+    nt.links.new(lp.outputs['Is Camera Ray'], mix.inputs['Fac'])
+    nt.links.new(bg_fill.outputs[0], mix.inputs[1]); nt.links.new(bg_cam.outputs[0], mix.inputs[2])
+    out = n('ShaderNodeOutputWorld')
+    nt.links.new(mix.outputs[0], out.inputs['Surface'])
+
+
+def haze(start=35.0, depth=900.0, amount=0.42, colour='#F3D2A6'):
+    """Light warm atmospheric haze from the mist pass: nothing near the camera, building toward the river."""
+    scene = bpy.context.scene
+    scene.view_layers[0].use_pass_mist = True
+    ms = scene.world.mist_settings
+    ms.start, ms.depth, ms.falloff = start, depth, 'QUADRATIC'
+    try:
+        nt = bpy.data.node_groups.new('haze', 'CompositorNodeTree')
+        nt.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
+        rl = nt.nodes.new('CompositorNodeRLayers')
+        rng = nt.nodes.new('ShaderNodeMapRange')
+        rng.inputs['To Max'].default_value = amount
+        nt.links.new(rl.outputs['Mist'], rng.inputs['Value'])
+        mix = nt.nodes.new('ShaderNodeMix')
+        mix.data_type = 'RGBA'
+        nt.links.new(rng.outputs['Result'], mix.inputs['Factor'])
+        nt.links.new(rl.outputs['Image'], mix.inputs[6])
+        mix.inputs[7].default_value = (*Mt.hex_lin(colour), 1.0)
+        out = nt.nodes.new('NodeGroupOutput')
+        nt.links.new(mix.outputs[2], out.inputs[0])
+        scene.compositing_node_group = nt
+        scene.render.use_compositing = True
+    except Exception as e:  # compositor API differs between Blender versions; renders still work without haze
+        print('[proof] haze compositor unavailable:', e)
 
 
 def camera(name, collection):
