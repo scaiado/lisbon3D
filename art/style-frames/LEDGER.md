@@ -30,3 +30,31 @@ and pushed the three styles further apart.
 ## Review limits
 The cloud environment cannot download from canva.com (proxy returns 403), so the frames were reviewed at 600×338
 preview size. Full-resolution 1920×1080 PNGs are available from the Canva board.
+
+# Proof-scene assets (Stage 2b, Blender kit)
+
+Everything in `art/exports/bica.glb` and `art/exports/microcar.glb` is made by our own scripts in `art/blender/`.
+No downloaded models, textures, fonts, scans or AI-generated images are used. The STYLE-C frame is a mood target only;
+nothing was traced or sampled from it. Licence: ours (project code and output).
+
+| Asset | Made by | Source | Notes |
+|---|---|---|---|
+| Plaster wash + normal (`plaster`, `plaster_n`) | `lisbon/textures.py` `plaster()` | procedural (numpy noise), seed 11–18 | neutral; tinted per building by the material colour factor |
+| Lioz stone + normal | `lioz()` | procedural, seeds 21–25 | |
+| Granite | `granite()` | procedural, seeds 31–33 | kerbs, nosings, socles |
+| Granite setts + normal | `setts()` | procedural, seeds 41–46 | running bond |
+| Calçada + normal | `calcada()` | procedural voronoi, seeds 51–55 | our own wide-wave pattern |
+| Canal roof tiles | `roof_tile()` | procedural, seeds 61–65 | the tile relief is real geometry (`kit_roof.py`) |
+| Azulejos: blue rings, blue lattice, green diamond | `azulejo_blue/lattice/green()` | procedural distance fields, seeds 71–73 | our own patterns, inspired by Lisbon tile traditions, not copied panels |
+| Painted wood + normal, painted metal | `wood_paint()`, `paint_metal()` | procedural | tinted per material |
+| Window glass | `glass()` | procedural gradient | painted reflection |
+| Shop signs | `signs()` | procedural pictograms (cup, tart, fish, key) | no lettering, no brands |
+| Fabric atlas | `fabric()` | procedural | awnings, laundry |
+| Foliage | `foliage()` | procedural voronoi | pots, plants |
+| Mid-ground façade | `far_facade()` | procedural | tinted per block |
+| River, sky, far shore, bridge cards | `river()`, `sky()`, `far_shore()`, `bridge()` | procedural | the bridge is a generic suspension-bridge silhouette |
+| Pastry-box decal | `pastry_box()` | procedural | invented tart roundel on the microcar |
+| All geometry (buildings, street, funicular, props, backdrop, microcar) | `lisbon/*.py` | Blender 5.2.0 LTS Python scripts | 12 authored building recipes plus derived variants; funicular and microcar are original designs |
+| Ambient occlusion (vertex colour `COLOR_0`) | `lisbon/bake.py` | Cycles AO bake | tinted toward the blue-violet shade; no sun light baked |
+
+Review status: generated and reviewed by Claude at texture-sheet and render level; awaiting kAI's visual review.
