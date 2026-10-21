@@ -19,8 +19,8 @@ export const CAR_SPOT = { x: 1.1, z: -7 } as const;
  * Places the microcar on the slope: height from the street surface under each axle, pitch from their difference.
  */
 export function placeMicrocar(car: Object3D, street: Object3D): void {
-  // Axle spacing of art/blender/lisbon/microcar.py; only the pitch depends on it.
-  const wheelbase = 1.6;
+  // Axle spacing of art/blender/lisbon/microcar.py (axles at ±0.85 m); only the pitch depends on it.
+  const wheelbase = 1.7;
   const rear = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z + wheelbase / 2);
   const front = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z - wheelbase / 2);
   car.position.set(CAR_SPOT.x, (rear + front) / 2, CAR_SPOT.z);
@@ -54,7 +54,7 @@ export function viewPose(view: ProofView, car: Object3D): ViewPose {
  */
 const FIXED_VIEWS: Record<Exclude<ProofView, 'chase' | 'carside'>, { position: Vec3; target: Vec3; fov: number; focus: number }> = {
   facade: { position: [1.3, 0.41, -9.2], target: [-3.1, 1.16, -14.6], fov: 50, focus: 7 },
-  establish: { position: [9, 26, 16], target: [-1, -4, -90], fov: 45, focus: 90 }
+  establish: { position: [-30, 48, 40], target: [115, -49, -320], fov: 40, focus: 120 }
 };
 
 type Vec3 = [number, number, number];
