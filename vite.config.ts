@@ -18,6 +18,12 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2023',
     sourcemap: true,
+    rollupOptions: {
+      input: {
+        spike: 'index.html',
+        proof: 'proof.html'
+      }
+    },
     // Each renderer route is its own dynamic chunk, so the size of every route can be read separately.
     chunkSizeWarningLimit: 1500
   }
