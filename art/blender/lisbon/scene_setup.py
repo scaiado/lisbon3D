@@ -22,6 +22,8 @@ VIEWS = {
     'view3_establishing': ((-30.0, -40.0, 48.0), (115.0, 320.0, -49.0), 40.0),
     # the parked hatchback in side profile, from the west pavement
     'view4_carside': ((-2.6, 7.0, S.road_z(7.0) + 1.0), (0.85, 7.0, S.road_z(7.0) + 0.75), 55.0),
+    # following the funicular down the hill: chase position ~6 m uphill of its rear end, 2 m above the road
+    'view5_follow': ((0.0, 35.8, S.road_z(35.8) + 2.0), (0.0, 50.0, S.road_z(50.0) + 1.0), 55.0),
 }
 
 

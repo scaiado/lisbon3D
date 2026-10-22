@@ -97,6 +97,8 @@ def compartment(mb, ya, yb, z0, first, last):
             continue
         yo = y_face + sgn * 0.02
         mb.box('funicular_white', (-w, min(y_face, yo), belt), (w, max(y_face, yo), sill))
+        # yellow end frame behind the two end panes, so the window band is closed (no see-through slits)
+        mb.box('funicular_yellow', (-w, min(y_face, y_face - sgn * 0.05), sill), (w, max(y_face, y_face - sgn * 0.05), head))
         for x0, x1 in ((-w + 0.12, -0.08), (0.08, w - 0.12)):
             pts = [(x0, y_face + sgn * 0.01, sill + 0.05), (x1, y_face + sgn * 0.01, sill + 0.05),
                    (x1, y_face + sgn * 0.01, head - 0.05), (x0, y_face + sgn * 0.01, head - 0.05)]

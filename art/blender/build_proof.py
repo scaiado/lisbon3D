@@ -157,6 +157,8 @@ def main():
     # park it where the engine's chase view puts it, for the Cycles target renders
     car.location = (0.85, 7.0, street.road_z(7.0))
     car.rotation_euler = (-math.atan(street.SLOPE), 0.0, 0.0)
+    if 'v5' in str(opt('--render', '')):
+        car.location = (0.0, 39.0, street.road_z(39.0))     # the player car tucked in behind the tram, as in the game
 
     rv = opt('--render')
     if rv:
@@ -164,7 +166,8 @@ def main():
         scene_setup.setup_light(light_c)
         preview = bool(opt('--preview'))
         samples = int(opt('--samples', 32 if preview else 96))
-        names = {'v1': 'view1_chase', 'v2': 'view2_facade', 'v3': 'view3_establishing', 'v4': 'view4_carside'}
+        names = {'v1': 'view1_chase', 'v2': 'view2_facade', 'v3': 'view3_establishing', 'v4': 'view4_carside',
+                 'v5': 'view5_follow'}
         for k in rv.split(','):
             name = names.get(k, k)
             t = time.time()

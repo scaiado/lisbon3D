@@ -75,7 +75,7 @@ DEF = {
     'lamp_glow': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
     # The funicular moves in the game, which picks up its meshes by the funicular_ material prefix: every part of
     # the car needs its own material, or the optimizer joins it with the static street (glass, brass, lamps).
-    'funicular_glass': dict(tex='glass', tile=1.0, rough=0.12),
+    'funicular_glass': dict(tex=None, color='#7E93A2', rough=0.15),     # lighter sky-tinted glass: reads as windows
     'funicular_brass': dict(tex=None, color='#C99B4A', rough=0.35, metal=1.0),
     'funicular_lamp': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
     'funicular_wheel': dict(tex=None, color='#8D8B87', rough=0.3, metal=1.0),
