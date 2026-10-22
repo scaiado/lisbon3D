@@ -9,6 +9,9 @@
 - The funicular runs down the hill as a moving obstacle once the run starts.
 - A scripted careful driver finishes all five deliveries in about 36 s; `tests/play.spec.ts` covers it.
   Details and known gaps: `docs/play.md`. Frame rate on the M4 not yet measured in play.
+- Fix after kAI's first play (18:32): the tram's windows, lamps, wheels and pole were merged into the static street
+  and stayed behind as dark floating panels. Tram parts now have their own materials (rebuilt on the Mac), the
+  optimizer keeps them apart, and the chase camera sits a little higher (2.8 m) so the street ahead reads over the car.
 
 ## Stage 2b pass 2 — refinement after review (2026-10-21) — awaiting review
 - kAI's notes: varied mid-ground roofs with depth, less repetition, cooler blue-violet shade with warm sun, a

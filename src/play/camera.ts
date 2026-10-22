@@ -52,7 +52,7 @@ export class ChaseCamera {
     } else {
       const far = this.mode === 'far';
       const distance = (far ? 9.5 : 6.4) + Math.min(speed, 16) * (far ? 0.14 : 0.1);
-      const height = (far ? 3.6 : 2.35) + Math.min(speed, 16) * 0.03;
+      const height = (far ? 3.6 : 2.8) + Math.min(speed, 16) * 0.03;
       desired = carPos.clone().addScaledVector(fwd, -distance).add(new Vector3(0, height, 0));
       look = carPos.clone().addScaledVector(fwd, 3 + Math.min(speed, 16) * 0.35).add(new Vector3(0, 1.0, 0));
       // On the hill the street ahead drops away: look down it rather than over it.

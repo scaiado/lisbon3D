@@ -35,6 +35,13 @@ URL options: `?clean` hides the HUD, `?dpr=` caps the pixel ratio. Resolution ad
 `window.__lisbonPlay` exposes the simulation (`step(input, seconds)` runs it without rendering) for tests and
 captures.
 
+## Moving parts and compression
+
+The funicular is found by material name: every part of it uses a `funicular_*` material, and the overhead wire is a
+separate static object. The optimizer marks those materials before `dedup` and `join`, which would otherwise merge
+them with lookalike street materials (the tram's wheels with the rails, its brass and pole with the street's) and
+leave parts behind at the authored spot or drag street geometry along with the tram.
+
 ## Assets
 
 - `public/assets/play/player_car.glb` (0.20 MB): a plain modern EV saloon (Tesla-like silhouette, pearl white, no

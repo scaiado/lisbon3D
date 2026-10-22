@@ -7,6 +7,8 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 
 const source = 'art/exports';
 const cli = join('node_modules', '.bin', 'gltf-transform');
@@ -35,6 +37,7 @@ for (const file of readdirSync(source).filter((name) => name.endsWith('.glb'))) 
   mkdirSync(scratch, { recursive: true });
   const target = targetOf(file);
   const fileSteps = PLAY.has(file) ? steps.filter(([command]) => command !== 'flatten' && command !== 'join') : steps;
+  if (!PLAY.has(file)) input = await markMovingParts(input, join(scratch, `moving-${file}`));
   fileSteps.forEach(([command, ...args], index) => {
     const output = index === fileSteps.length - 1 ? join(target, file) : join(scratch, `${index}-${file}`);
     execFileSync(cli, [command, input, output, ...args], { stdio: ['ignore', 'ignore', 'inherit'] });
@@ -44,4 +47,19 @@ for (const file of readdirSync(source).filter((name) => name.endsWith('.glb'))) 
   const before = statSync(join(source, file)).size;
   const after = statSync(join(target, file)).size;
   console.log(`${file}: ${(before / 1e6).toFixed(2)} MB → ${(after / 1e6).toFixed(2)} MB`);
+}
+
+/**
+ * The game moves the funicular by its funicular_* materials. dedup and join merge materials that are equal apart
+ * from their name (the tram's wheels with the street's rails, its brass and pole with the street's), which would
+ * leave those parts behind or drag the street along, so the moving materials get a marker that keeps them apart.
+ */
+async function markMovingParts(input, output) {
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const document = await io.read(input);
+  for (const material of document.getRoot().listMaterials()) {
+    if (material.getName().startsWith('funicular_')) material.setExtras({ ...material.getExtras(), moving: 'funicular' });
+  }
+  await io.write(output, document);
+  return output;
 }
