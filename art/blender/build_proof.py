@@ -137,18 +137,22 @@ def main():
     if not opt('--no-export') and not car_only:
         export(objs, os.path.join(EXPORTS, 'bica.glb'))
 
-    # hero microcar: built and baked on its own, far above the street so the street doesn't occlude it
-    car_c = coll('microcar')
+    # player car: built and baked on its own, far above the street so the street doesn't occlude it
+    car_c = coll('player_car')
     car = microcar.build(car_c)
+    parts = microcar.meshes(car)
     car.location = (0.0, 0.0, 500.0)
+    bpy.context.view_layer.update()
     if not opt('--no-bake'):
-        bake.bake_ao([car], log=log)
+        bake.bake_ao(parts, log=log)
     else:
-        bake.fill_white(car)
+        for o in parts:
+            bake.fill_white(o)
     car.location = (0.0, 0.0, 0.0)
-    log('microcar: %d tris' % geo.tri_count(car))
+    bpy.context.view_layer.update()
+    log('player car: %d tris' % sum(geo.tri_count(o) for o in parts))
     if not opt('--no-export'):
-        export([car], os.path.join(EXPORTS, 'microcar.glb'))
+        export([car] + parts, os.path.join(EXPORTS, 'player_car.glb'))
     # park it where the engine's chase view puts it, for the Cycles target renders
     car.location = (0.85, 7.0, street.road_z(7.0))
     car.rotation_euler = (-math.atan(street.SLOPE), 0.0, 0.0)

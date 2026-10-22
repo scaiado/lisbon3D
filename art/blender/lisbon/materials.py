@@ -75,12 +75,16 @@ DEF = {
     'lamp_glow': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
     # microcar
     'car_teal': dict(tex=None, color='#3A9E9A', rough=0.25, clearcoat=True),
-    'car_paint': dict(tex=None, color='#A6D1BD', rough=0.28, clearcoat=True),     # soft pastel mint (Beetle)
+    'car_paint': dict(tex=None, color='#ECEBE7', rough=0.22, clearcoat=True),     # pearl white (player EV)
+    'car_paint_mint': dict(tex=None, color='#A6D1BD', rough=0.28, clearcoat=True),  # pastel mint (Beetle studies)
+    'car_roofglass': dict(tex=None, color='#1A2229', rough=0.04),                   # dark tinted glass roof
+    'car_brake': dict(tex=None, color='#B8302A', rough=0.15, emit='#3A0C08'),        # tail/brake lamps (engine brightens)
+    'car_reverse': dict(tex=None, color='#F2F0EA', rough=0.1),                       # reverse lamps
     'car_box': dict(tex='pastry_box', tile=1.0, rough=0.4),
     'car_cream': dict(tex=None, color='#F1E6CC', rough=0.35),
     'car_tyre': dict(tex=None, color='#2A2827', rough=0.85),
     'car_chrome': dict(tex=None, color='#D9D6CF', rough=0.15, metal=1.0),
-    'car_alloy': dict(tex=None, color='#B8BCC0', rough=0.3, metal=0.85),
+    'car_alloy': dict(tex=None, color='#A9AEB3', rough=0.35, metal=0.6),
     'car_glass': dict(tex=None, color='#22323C', rough=0.05, alpha=0.62),
     'car_lamp': dict(tex=None, color='#F4F1EA', rough=0.08, emit='#FFE7B0'),
     'car_tail': dict(tex=None, color='#B8302A', rough=0.15, emit='#5A140E'),

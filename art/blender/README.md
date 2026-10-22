@@ -67,39 +67,47 @@ and calçada, 1024 for most others, 256–512 for small ones. Every texture is l
 Largest pieces: authored buildings 21k–79k each, mid-ground city 109k, street 35k, funicular 8k, people 5.7k, animals 2.7k.
 Raw size breakdown: positions 18.9 MB, normals 18.9 MB, UVs 12.6 MB, colours 6.3 MB, indices 7.0 MB, textures 14.8 MB.
 
-## Hero car (`microcar.py`, exported as `microcar.glb`)
+## Player car (`microcar.py`, exported as `player_car.glb`)
 
-A charming classic-Beetle-style cabriolet, in the STYLE-C look. It has no real-world badges, logos or VW emblem; the
-bonnet carries only a plain chrome strip.
-- **Body:** one rounded arch in side profile. A raised, broad, domed front lid sits between full, round front fenders
-  that carry large round headlamps (~0.21 m chrome rings, centres at x = ±0.58). The rolled cockpit edge has a thin
-  chrome strip, and the curved engine lid runs down to the rear bumper.
-- **Open cabin** (boolean cut): cream-tan upholstered buckets and rear bench, tan door cards, a body-colour dashboard
-  top with a round speedometer, a thin cream steering wheel on the left and a gear lever.
-- **Windscreen:** framed and fairly upright, with a body-colour frame, a chrome inner bead, glass, wipers and an
-  interior mirror.
-- **Folded hood:** a padded tan canvas bundle on the rear deck behind the bench, with stitched folds and two straps.
-- **Fenders and running gear:** four separate bulbous fenders, running boards, chrome blade bumpers with overriders,
-  cream wheels with whitewalls and domed chrome hubcaps, and blank EU-style plates.
-- **Paint:** soft pastel mint (`car_paint`, #A6D1BD). New materials: `car_hood` (tan canvas), `car_hood_dark`
-  (stitching) and `car_interior` (door cards). `car_seat` is now cream-tan upholstery.
-- **Branding:** subtle only, a 0.26 m pastry roundel on each door.
+A plain, familiar modern electric saloon in the Tesla Model 3 mould, in pearl white. There is no Tesla (or any other)
+logo, badge or lettering. It has a smooth grille-less nose with slim swept headlamps, a black glasshouse and a dark
+glass roof, a fastback down to a short tail, slim wrap-around tail lamps, flush handles, aero wheel covers, blank EU
+plates, an interior with a centre touchscreen, and a subtle pastry roundel on each front door. 9,828 triangles.
+
+Node layout for the engine: a root `player_car` with children `body`, `wheel_FL`, `wheel_FR`, `wheel_RL` and
+`wheel_RR`. Each wheel node's origin is on its hub centre, and the wheel spins about the node's local X.
+Materials: `car_brake` (tail/brake lamps, weak emissive), `car_reverse`, `car_lamp` (headlamps), `car_paint`,
+`car_glass` (alpha 0.62), `car_roofglass`, `car_trim`, `car_tyre`, `car_alloy`, `car_plate`, `car_box` (roundel),
+`car_seat` and `car_amber`.
 
 | | Blender | glTF |
 |---|---|---|
 | Origin | ground, midway between the axles | same |
 | Facing | +Y | -Z |
-| Wheelbase | 2.40 m (axles at y = ±1.20) | z = ∓1.20 |
-| Body nose / tail | y = +2.01 / -2.06 (bumpers +2.13 / -2.18) | z = -2.01 / +2.06 |
-| Overall length | 4.05 m body, ~4.28 m over the bumpers | |
-| Width / height | 1.61 m over the fenders, 1.42 m body / 1.43 m to the windscreen top (hood bundle ~1.32 m) | |
-| Wheel radius = axle height | 0.31 m | y = 0.31 |
-| Track | 1.31 m front, 1.35 m rear | |
-| Ground clearance | ~0.34 m (running boards, the lowest part of the body); classic tall stance | |
+| Wheelbase | 2.875 m (axles y = ±1.4375) | z = ∓1.4375 |
+| Track | 1.58 m (wheel centres x = ±0.79) | |
+| Wheel radius = axle height | 0.34 m | y = 0.34 |
+| Nose / tail | y = +2.315 / -2.40 | z = -2.315 / +2.40 |
+| Length / width / height | 4.72 m / 1.85 m (about 2.0 m over the mirrors) / 1.45 m | |
 
-Studio previews (front three-quarter, side, rear three-quarter, rear) are in `art/renders/car/cabrio_*.png`; the earlier closed version is in `beetle_*.png`.
-Regenerate them with `car_preview.py`, and the export with `build_proof.py -- --car-only`. In the scene the car is
-parked at (0.85, 7.0, road), pitched to the slope.
+Studio previews are in `art/renders/car/ev_*.png`. Earlier studies are in `hatchback_*`, `beetle_*` and `cabrio_*`; the
+Beetle code is kept in `lisbon/beetle.py`.
+
+## Gameplay data (`export_gameplay.py` → `art/exports/bica_gameplay.json`)
+
+Built from the same recipes and street profile as `bica.glb`, in glTF world coordinates. It contains:
+- the spawn point at the top junction,
+- the bakery pickup ("Pastelaria Bica Doce", the corner shopfront on the Calçada do Combro side),
+- five delivery stops down the Bica, alternating sides. Each has a door position, its outward normal and a kerbside
+  `stand` point. The first stop is the grandmother's door.
+- the funicular track centreline, car length and centre,
+- the street bounds and every street door.
+
+Regenerate it with:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python art/blender/export_gameplay.py
+```
 
 ## Review cameras (Blender coordinates: X west, Y downhill/south, Z up; vertical FOV)
 

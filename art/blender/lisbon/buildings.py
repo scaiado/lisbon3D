@@ -234,7 +234,7 @@ def build(recipe, collection, detail=2):
         side = MeshBuilder()
         gs = S.KERB_H - datum
         side_storeys = recipe.get('corner_storeys') or [dict(h=s['h'], bays=' '.join(['W'] * max(2, int(D / 2.6)))) for s in storeys]
-        side_recipe_build(side, recipe, D, zf, gs, side_storeys, fam, plaster, rnd, detail)
+        side_ops = side_recipe_build(side, recipe, D, zf, gs, side_storeys, fam, plaster, rnd, detail)
         side.verts = [side_frame @ v for v in side.verts]
         mb.merge(side)
 
@@ -250,7 +250,8 @@ def build(recipe, collection, detail=2):
     Mw = M @ tr(0, 0, datum)
     mb.verts = [Mw @ v for v in mb.verts]
     obj = mb.build('building_' + recipe['name'], collection)
-    info = dict(matrix=Mw, openings=openings, zf=zf, datum=datum, W=W, D=D, H=H, ground=g)
+    info = dict(matrix=Mw, openings=openings, zf=zf, datum=datum, W=W, D=D, H=H, ground=g,
+                side=(Mw @ side_frame, side_ops) if recipe.get('corner') else None)
     return obj, info
 
 
@@ -306,6 +307,7 @@ def side_recipe_build(mb, recipe, D, zf, gs, storeys, fam, plaster, rnd, detail)
             if rnd.random() < 0.7:
                 F.shutters(mb, o, rnd.choice(('open', 'open', 'closed', 'half')), recipe['shutters'], fam['reveal'],
                            slats=detail >= 2, rnd=rnd)
+    return ops
 
 
 # ------------------------------------------------------------------ small façade dressing

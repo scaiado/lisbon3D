@@ -29,8 +29,10 @@ c = bpy.data.collections.new('car')
 scene.collection.children.link(c)
 car = microcar.build(c)
 from lisbon import bake  # noqa: E402
-bake.fill_white(car)
-print('[car] triangles', geo.tri_count(car))
+parts = microcar.meshes(car) if car.type == 'EMPTY' else [car]
+for o in parts:
+    bake.fill_white(o)
+print('[car] triangles', sum(geo.tri_count(o) for o in parts))
 
 ground = bpy.data.meshes.new('ground')
 ground.from_pydata([(-20, -20, 0), (20, -20, 0), (20, 20, 0), (-20, 20, 0)], [], [(0, 1, 2, 3)])
@@ -54,11 +56,11 @@ world.node_tree.nodes['Background'].inputs['Color'].default_value = (*Mt.hex_lin
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = 1.2
 
 SHOTS = {
-    'front34': ((5.0, 6.2, 1.8), (0, 0.4, 0.72), 30),
-    'side': ((9.6, 0.0, 0.95), (0, 0, 0.75), 25),
-    'rear34': ((-4.8, -6.4, 1.9), (0, -0.4, 0.78), 30),
-    'rear': ((0.0, -9.4, 1.25), (0, 0, 0.78), 22),
-    'chase': ((0.0, -6.5, 2.1), (0, 1.5, 0.6), 50),
+    'front34': ((6.0, 7.4, 2.0), (0, 0.4, 0.70), 30),
+    'side': ((11.5, 0.0, 1.0), (0, 0, 0.72), 25),
+    'rear34': ((-5.8, -7.6, 2.1), (0, -0.4, 0.75), 30),
+    'rear': ((0.0, -11.0, 1.3), (0, 0, 0.75), 22),
+    'chase': ((0.0, -7.5, 2.4), (0, 2.0, 0.6), 50),
 }
 cull = '--cull' in argv
 for name, (pos, tgt, fov) in SHOTS.items():
