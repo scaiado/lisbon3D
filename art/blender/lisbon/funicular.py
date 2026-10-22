@@ -1,4 +1,4 @@
-"""The Bica funicular car (stylised, ours) and its overhead wire.
+"""The Bica funicular car (stylised, ours) and its overhead wire (a separate object).
 
 Real Lisbon funicular cars are stepped so every compartment floor stays level on the slope. This one keeps that
 idea and silhouette in direction C's chunky storybook proportions: three level compartments stepping down the
@@ -35,7 +35,7 @@ def build(collection, centre_y=CENTRE_Y):
         z = S.road_z(y) + 0.3
         for s in (-1, 1):
             mb.cyl('funicular_dark', (s * S.RAIL_X - 0.05, y, z), (s * S.RAIL_X + 0.05, y, z), 0.3, seg=14)
-            mb.cyl('rail_steel', (s * S.RAIL_X - 0.06, y, z), (s * S.RAIL_X + 0.06, y, z), 0.12, seg=10)
+            mb.cyl('funicular_wheel', (s * S.RAIL_X - 0.06, y, z), (s * S.RAIL_X + 0.06, y, z), 0.12, seg=10)
 
     for k in range(COMPARTMENTS):
         ya = y_top + k * seg + 0.04
@@ -51,10 +51,16 @@ def build(collection, centre_y=CENTRE_Y):
     ym = centre_y
     zr = S.road_z(ym) + 0.62 + 2.55
     mb.box('funicular_dark', (-0.18, ym - 0.3, zr), (0.18, ym + 0.3, zr + 0.14))
-    mb.tube('iron', [(0.0, ym, zr + 0.14), (0.0, ym - 1.4, S.road_z(ym - 1.4) + 5.38)], 0.025, seg=6)
-    S.wires(mb)
+    mb.tube('funicular_pole', [(0.0, ym, zr + 0.14), (0.0, ym - 1.4, S.road_z(ym - 1.4) + 5.38)], 0.025, seg=6)
     obj = mb.build('funicular', collection, bevel_width=0.03, bevel_segments=2)
     return obj
+
+
+def build_wire(collection):
+    """The overhead wire stays put while the car moves, so it is its own object with the street's iron."""
+    mb = MeshBuilder()
+    S.wires(mb)
+    return mb.build('overhead_wire', collection, bevel_width=0.03, bevel_segments=2)
 
 
 def compartment(mb, ya, yb, z0, first, last):
@@ -76,12 +82,12 @@ def compartment(mb, ya, yb, z0, first, last):
             mb.box('funicular_yellow', (min(x_out, x_in), y0, sill), (max(x_out, x_in), y1, head))
         # glass set back in the window band
         pts = [(x_in, ya, sill), (x_in, yb, sill), (x_in, yb, head), (x_in, ya, head)]
-        mb.poly('glass', pts if s > 0 else pts[::-1], uvs=[(0, 0), (1, 0), (1, 1), (0, 1)] if s > 0 else [(0, 0), (0, 1), (1, 1), (1, 0)])
+        mb.poly('funicular_glass', pts if s > 0 else pts[::-1], uvs=[(0, 0), (1, 0), (1, 1), (0, 1)] if s > 0 else [(0, 0), (0, 1), (1, 1), (1, 0)])
         # door outline and handle on the lower body
         yd = (ya + yb) / 2
         mb.box('funicular_dark', (s * w - 0.01, yd - 0.42, z0 + 0.1), (s * w + 0.015 * s, yd - 0.38, belt - 0.05))
         mb.box('funicular_dark', (s * w - 0.01, yd + 0.38, z0 + 0.1), (s * w + 0.015 * s, yd + 0.42, belt - 0.05))
-        mb.box('brass', (s * w, yd + 0.25, z0 + 0.55), (s * (w + 0.04), yd + 0.31, z0 + 0.6))
+        mb.box('funicular_brass', (s * w, yd + 0.25, z0 + 0.55), (s * (w + 0.04), yd + 0.31, z0 + 0.6))
     # roof: soft overhang, lantern strip
     mb.box('funicular_dark', (-w - 0.08, ya - 0.06, roof - 0.08), (w + 0.08, yb + 0.06, roof + 0.04))
     mb.box('funicular_white', (-w * 0.55, ya + 0.2, roof + 0.04), (w * 0.55, yb - 0.2, roof + 0.16))
@@ -94,7 +100,7 @@ def compartment(mb, ya, yb, z0, first, last):
         for x0, x1 in ((-w + 0.12, -0.08), (0.08, w - 0.12)):
             pts = [(x0, y_face + sgn * 0.01, sill + 0.05), (x1, y_face + sgn * 0.01, sill + 0.05),
                    (x1, y_face + sgn * 0.01, head - 0.05), (x0, y_face + sgn * 0.01, head - 0.05)]
-            mb.poly('glass', pts if sgn < 0 else pts[::-1], uvs=[(0, 0), (1, 0), (1, 1), (0, 1)])
+            mb.poly('funicular_glass', pts if sgn < 0 else pts[::-1], uvs=[(0, 0), (1, 0), (1, 1), (0, 1)])
         mb.box('funicular_dark', (-w - 0.05, y_face, z0 + 0.12), (w + 0.05, y_face + sgn * 0.12, z0 + 0.3))
-        mb.sphere('lamp_glow', (0.0, y_face + sgn * 0.05, z0 + 0.7), 0.13, seg=12, rings=6, sz=(0.13, 0.06, 0.13))
-        mb.box('brass', (-0.17, y_face, z0 + 0.55), (0.17, y_face + sgn * 0.03, z0 + 0.85))
+        mb.sphere('funicular_lamp', (0.0, y_face + sgn * 0.05, z0 + 0.7), 0.13, seg=12, rings=6, sz=(0.13, 0.06, 0.13))
+        mb.box('funicular_brass', (-0.17, y_face, z0 + 0.55), (0.17, y_face + sgn * 0.03, z0 + 0.85))

@@ -114,6 +114,7 @@ def main():
     if not only:
         t = time.time()
         objs.append(funicular.build(scene_c))
+        objs.append(funicular.build_wire(scene_c))
         far = backdrop.build(scene_c)
         objs.extend(life.build(scene_c))
         log('funicular + mid-ground + backdrop: %.1fs' % (time.time() - t))

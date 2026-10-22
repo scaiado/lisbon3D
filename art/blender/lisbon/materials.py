@@ -73,6 +73,13 @@ DEF = {
     'funicular_white': dict(tex='paint_metal', tint='#F1EADB', tile=2.0, rough=0.5),
     'funicular_dark': dict(tex='paint_metal', tint='#3A3634', tile=2.0, rough=0.6),
     'lamp_glow': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
+    # The funicular moves in the game, which picks up its meshes by the funicular_ material prefix: every part of
+    # the car needs its own material, or the optimizer joins it with the static street (glass, brass, lamps).
+    'funicular_glass': dict(tex='glass', tile=1.0, rough=0.12),
+    'funicular_brass': dict(tex=None, color='#C99B4A', rough=0.35, metal=1.0),
+    'funicular_lamp': dict(tex=None, color='#FFE2A8', rough=0.3, emit='#FFD58A'),
+    'funicular_wheel': dict(tex=None, color='#8D8B87', rough=0.3, metal=1.0),
+    'funicular_pole': dict(tex=None, color='#22282A', rough=0.55, metal=0.4),
     # microcar
     'car_teal': dict(tex=None, color='#3A9E9A', rough=0.25, clearcoat=True),
     'car_paint': dict(tex=None, color='#ECEBE7', rough=0.22, clearcoat=True),     # pearl white (player EV)

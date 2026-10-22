@@ -86,7 +86,7 @@ if 'buildings' in what:
     for r in recipes.all_recipes():
         buildings.build(r, None, detail=r.get('detail', 2))
 if 'funicular' in what:
-    from lisbon import funicular; funicular.build(None)
+    from lisbon import funicular; funicular.build(None); funicular.build_wire(None)
 if 'backdrop' in what:
     from lisbon import backdrop; backdrop.build(None)
 cars = []
