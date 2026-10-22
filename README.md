@@ -1,73 +1,41 @@
 # Lisbon3D
 
-**A tiny Lisbon you can drive through.**
+**A tiny courier in a sunlit miniature Lisbon.** A browser driving game in development: a small,
+expressive microcar, steep streets, tiled façades, trams and the river. The first playable slice is
+Chiado → Bica → Cais do Sodré, with a pastry-delivery run ("Nata Run") and free exploration.
 
-A playable browser experiment that pairs a MapLibre aerial map with a toy-like
-Three.js driving world. It explores how real street geography can become a small,
-readable game space rather than a full city simulation.
-
-![Local browser prototype in drive mode](docs/assets/drive-preview.png)
-
-<sub>Actual local browser capture. The native Godot prototype is a separate work in progress.</sub>
+> **Status:** restart in progress. Stage 1 is a renderer spike: a look-test street and a benchmark
+> page, not the game yet. The plan is in [`plan.md`](plan.md); progress in [`progress.md`](progress.md).
 
 ## Run locally
 
-Use Node.js 22+ and npm. From the repository root:
+Node.js 24 LTS (or ≥ 22.12) and npm:
 
 ```bash
-git clone https://github.com/scaiado/lisbon3D.git
-cd lisbon3D
 npm ci
-npm run dev
+npm run dev          # http://localhost:5173
 ```
 
-Open the local URL printed by Vite and choose **Enter Drive Mode**.
-The current entry point does not require a MapTiler key.
-
-```bash
-npm run build
-npm run preview
-```
-
-## Explore
-
-| Control | Action |
+| Check | Command |
 | --- | --- |
-| WASD / arrow keys | Drive and steer |
-| Shift | Boost |
-| Space | Brake |
-| R | Respawn |
-| M / Back To Aerial | Return to the map |
+| Type check | `npm run typecheck` |
+| Production build | `npm run build` then `npm run preview` |
+| Functional tests | `npx playwright install chromium` once, then `npm test` |
 
-The aerial map uses OpenStreetMap tiles. The driving world can load roads,
-buildings, water, and greenery through Overpass, caching the geographic slice in
-browser storage. If that request fails, the app keeps its procedural fallback.
+The look test runs three renderer routes (`?renderer=webgpu`, `webgpu-gl2`, `webgl`). To measure
+performance on real hardware, see [`docs/benchmark.md`](docs/benchmark.md).
 
-## Status and limits
+## Repository
 
-This is a prototype, not a geographically precise model of Lisbon. Building
-heights may be inferred; driving, collisions, and street geometry are simplified.
-WebGL is required. Map tiles and fresh OSM data require network access, and public
-services can be unavailable or rate-limited.
-
-The previously advertised Lisbon subdomain currently serves the Tiny Little Lab
-homepage, so this README points to the reproducible local app instead of claiming
-a live game deployment. The screenshot above shows the browser version, not a
-finished native release.
-
-## Native experiment
-
-A separate Godot project lives in [`game/godot`](game/godot/README.md).
-Open `game/godot/project.godot` with Godot 4.6.x; the committed sample data allows
-a first run without fetching a new city slice. See its README for the optional
-Node.js 24+ exporter workflow.
+- `src/`: the new browser app (TypeScript, Vite 8, three.js r186).
+- `docs/`: one short document per component.
+- `archive/`: earlier prototypes, kept with full Git history. The old MapLibre + Three.js drive demo
+  still runs from `archive/web-v0` (see [`archive/README.md`](archive/README.md)).
 
 ## Data and attribution
 
-Geographic data comes from OpenStreetMap contributors; its licensing and
-attribution requirements still apply. The current browser entry point uses
-MapLibre and Three.js. Earlier terrain and design explorations remain in the
-repository; their plans do not describe every feature of the current app.
+Street data for the playable district will come from © OpenStreetMap contributors (ODbL), extracted
+once and credited in the game. The game makes no runtime calls to map or Overpass services.
 
 ---
 

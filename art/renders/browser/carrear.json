@@ -1,0 +1,10 @@
+{
+  "view": "carrear",
+  "backend": "webgl2",
+  "drawCalls": 300,
+  "triangles": 4388467,
+  "bytes": {
+    "street": 19447608,
+    "microcar": 302716
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "machine": "Apple M4 (10-core), 24 GB",
+  "macOS": "26.6.2 (25G83)",
+  "power": "AC attached (battery 80%)",
+  "display": "built-in Liquid Retina, 1710x1112 points at 2x, 60 Hz (main); external Samsung U32R59x 3008x1692 points at 30 Hz also attached",
+  "browser": "Google Chrome 155.0.8059.85, separate temporary profile, extensions disabled, --start-fullscreen on the built-in display",
+  "bundle": "perf/dist at 6ceac97 (bica.glb 19.45 MB, microcar.glb 0.14 MB)",
+  "warmup_s": 3,
+  "seconds_per_view": 10,
+  "background_load": "macOS mediaanalysisd was using ~1.4 CPU cores during the runs (system photo analysis, not stoppable)",
+  "source": "numbers read from the python3 http.server log of GET ./__perf (the in-page Copy JSON panel was not used)",
+  "run": "chrome-builtin-dpr2",
+  "started": "21/Oct/2026 08:47:39",
+  "url_query": "report=1&dpr=2&run=chrome-builtin-dpr2",
+  "dpr": "2",
+  "drawing_buffer": "3420 x 2224 (1710x1112 CSS px x 2)",
+  "views": [
+    {
+      "view": "chase",
+      "avgFps": 26.6,
+      "onePercentLowFps": 19.3,
+      "p95FrameMs": 51.0,
+      "drawCalls": 285.0,
+      "triangles": 4364095,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "carside",
+      "avgFps": 20.6,
+      "onePercentLowFps": 11.9,
+      "p95FrameMs": 66.7,
+      "drawCalls": 241.0,
+      "triangles": 4306405,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "facade",
+      "avgFps": 25.2,
+      "onePercentLowFps": 19.4,
+      "p95FrameMs": 50.9,
+      "drawCalls": 255.0,
+      "triangles": 4339197,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "establish",
+      "avgFps": 29.7,
+      "onePercentLowFps": 19.7,
+      "p95FrameMs": 49.5,
+      "drawCalls": 247.0,
+      "triangles": 4334409,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    }
+  ]
+}

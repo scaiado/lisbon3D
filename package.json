@@ -1,20 +1,31 @@
 {
-  "name": "lisbon-3d-web",
-  "version": "0.2.0",
-  "description": "3D map of Lisbon with Hello Terrain drive mode",
+  "name": "lisbon3d",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Lisbon3D: a tiny courier driving game set in a miniature Lisbon.",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "export:godot-slice": "node scripts/export-lisbon-slice.mjs --out game/godot/data/lisbon_slice.json"
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "check": "npm run typecheck && npm run build && npm run test",
+    "assets:proof": "node tools/optimize-proof-assets.mjs",
+    "build:perf": "vite build --mode perf && node tools/link-perf-assets.mjs"
   },
   "dependencies": {
-    "cannon-es": "^0.20.0",
-    "maplibre-gl": "^5.0.0",
-    "three": "^0.160.1"
+    "three": "0.186.1"
   },
   "devDependencies": {
-    "vite": "^6.0.0"
+    "@gltf-transform/cli": "4.5.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/three": "0.186.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
   }
 }

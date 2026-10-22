@@ -1,0 +1,1 @@
+var e={exposure:1.05,aoRadius:.6,bloomStrength:.18,bloomRadius:.35,bloomThreshold:.9,focusDistance:9,focalRange:22,bokehScale:2.2,classicAperture:.0016,classicMaxBlur:.006};function t(e){let t=e.getExtension(`WEBGL_debug_renderer_info`),n=t?e.getParameter(t.UNMASKED_RENDERER_WEBGL):e.getParameter(e.RENDERER);return`WebGL 2 · ${String(n)}`}export{e as n,t};

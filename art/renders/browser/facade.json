@@ -1,0 +1,10 @@
+{
+  "view": "facade",
+  "backend": "webgl2",
+  "drawCalls": 255,
+  "triangles": 4339197,
+  "bytes": {
+    "street": 19447608,
+    "microcar": 139236
+  }
+}

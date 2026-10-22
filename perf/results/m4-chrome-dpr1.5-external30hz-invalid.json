@@ -1,0 +1,56 @@
+{
+  "machine": "Apple M4 (10-core), 24 GB",
+  "macOS": "26.6.2 (25G83)",
+  "power": "AC attached (battery 80%)",
+  "display": "built-in Liquid Retina, 1710x1112 points at 2x, 60 Hz (main); external Samsung U32R59x 3008x1692 points at 30 Hz also attached",
+  "browser": "Google Chrome 155.0.8059.85, separate temporary profile, extensions disabled, --start-fullscreen on the built-in display",
+  "bundle": "perf/dist at 6ceac97 (bica.glb 19.45 MB, microcar.glb 0.14 MB)",
+  "warmup_s": 3,
+  "seconds_per_view": 10,
+  "background_load": "macOS mediaanalysisd was using ~1.4 CPU cores during the runs (system photo analysis, not stoppable)",
+  "source": "numbers read from the python3 http.server log of GET ./__perf (the in-page Copy JSON panel was not used)",
+  "run": "chrome-dpr1.5",
+  "started": "21/Oct/2026 08:45:06",
+  "url_query": "report=1&run=chrome-dpr1.5",
+  "dpr": "1.5",
+  "drawing_buffer": "unknown: full screen landed on the 30 Hz external display",
+  "views": [
+    {
+      "view": "chase",
+      "avgFps": 29.7,
+      "onePercentLowFps": 15.1,
+      "p95FrameMs": 35.1,
+      "drawCalls": 285.0,
+      "triangles": 4364095,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "carside",
+      "avgFps": 23.6,
+      "onePercentLowFps": 14.6,
+      "p95FrameMs": 67.3,
+      "drawCalls": 233.0,
+      "triangles": 4247105,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "facade",
+      "avgFps": 26.4,
+      "onePercentLowFps": 14.6,
+      "p95FrameMs": 66.7,
+      "drawCalls": 241.0,
+      "triangles": 4324233,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    },
+    {
+      "view": "establish",
+      "avgFps": 30.0,
+      "onePercentLowFps": 28.3,
+      "p95FrameMs": 35.0,
+      "drawCalls": 247.0,
+      "triangles": 4334409,
+      "gpu": "WebGL 2 \u00b7 ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    }
+  ],
+  "note": "Discarded: the window went full screen on the 30 Hz external monitor, so every view is vsync-capped at 30 fps."
+}
