@@ -5,8 +5,8 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 
 /**
  * `vite build --mode perf` (npm run build:perf) writes a self-contained static copy of the proof to perf/dist/ with
- * relative paths, so it can be measured on another machine with any static server and no npm install. The proof
- * assets are not copied: perf/dist/assets/proof is a tracked symlink to public/assets/proof.
+ * relative paths, so it can be measured on another machine with any static server and no npm install. The proof and
+ * play assets are not copied: perf/dist/assets/{proof,play} are tracked symlinks to public/assets/.
  */
 export default defineConfig(({ mode }) => ({
   define: {
@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode !== 'perf',
     copyPublicDir: mode !== 'perf',
     rollupOptions: {
-      input: (mode === 'perf' ? { proof: 'proof.html' } : { spike: 'index.html', proof: 'proof.html' }) as Record<string, string>
+      input: (mode === 'perf' ? { proof: 'proof.html', play: 'play.html' } : { spike: 'index.html', proof: 'proof.html', play: 'play.html' }) as Record<string, string>
     },
     // Each renderer route is its own dynamic chunk, so the size of every route can be read separately.
     chunkSizeWarningLimit: 1500

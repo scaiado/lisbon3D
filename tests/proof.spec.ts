@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 const VIEWS = ['chase', 'carfront', 'carside', 'carrear', 'facade', 'establish'] as const;
-const built = existsSync('public/assets/proof/bica.glb') && existsSync('public/assets/proof/microcar.glb');
+const built = existsSync('public/assets/proof/bica.glb') && existsSync('public/assets/play/player_car.glb');
 
 /**
  * Functional check of the visual proof, plus the review captures: with CAPTURE=1 each view is saved at

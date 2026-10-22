@@ -5,7 +5,7 @@ import { PROOF_LOOK } from './look';
 
 export const PROOF_ASSETS = {
   street: 'assets/proof/bica.glb',
-  microcar: 'assets/proof/microcar.glb'
+  microcar: 'assets/play/player_car.glb'
 } as const;
 
 export interface ProofAssets {
@@ -17,18 +17,20 @@ export interface ProofAssets {
 
 /** Loads the Blender exports (compressed by tools/optimize-proof-assets.mjs) and prepares them for lighting. */
 export async function loadProofAssets(base: string): Promise<ProofAssets> {
+  const [street, microcar] = await Promise.all([loadModel(`${base}${PROOF_ASSETS.street}`), loadModel(`${base}${PROOF_ASSETS.microcar}`)]);
+  return { street: street.scene, microcar: microcar.scene, bytes: { street: street.bytes, microcar: microcar.bytes } };
+}
+
+/** Loads one compressed glTF and prepares it for the proof lighting (shadows, painted cards, satin paint). */
+export async function loadModel(url: string): Promise<{ scene: Object3D; bytes: number }> {
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
-  const load = async (path: string): Promise<{ scene: Object3D; bytes: number }> => {
-    let bytes = 0;
-    const gltf = await loader.loadAsync(`${base}${path}`, (event) => {
-      bytes = event.total || event.loaded;
-    });
-    prepare(gltf.scene);
-    return { scene: gltf.scene, bytes };
-  };
-  const [street, microcar] = await Promise.all([load(PROOF_ASSETS.street), load(PROOF_ASSETS.microcar)]);
-  return { street: street.scene, microcar: microcar.scene, bytes: { street: street.bytes, microcar: microcar.bytes } };
+  let bytes = 0;
+  const gltf = await loader.loadAsync(url, (event) => {
+    bytes = event.total || event.loaded;
+  });
+  prepare(gltf.scene);
+  return { scene: gltf.scene, bytes };
 }
 
 /**

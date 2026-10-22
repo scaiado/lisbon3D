@@ -23,7 +23,7 @@ export const CAR_SPOT = { x: 0.85, z: -7 } as const;
  */
 export function placeMicrocar(car: Object3D, street: Object3D): void {
   // Axle spacing of art/blender/lisbon/microcar.py; only the pitch depends on it.
-  const wheelbase = 2.4;
+  const wheelbase = 2.875;
   const rear = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z + wheelbase / 2);
   const front = groundHeight(street, CAR_SPOT.x, CAR_SPOT.z - wheelbase / 2);
   car.position.set(CAR_SPOT.x, (rear + front) / 2, CAR_SPOT.z);

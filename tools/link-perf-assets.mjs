@@ -1,8 +1,10 @@
-// After `vite build --mode perf`: link perf/dist/assets/proof to public/assets/proof (relative symlink), so the
-// static perf bundle serves the same compressed proof assets without a second 18 MB copy in git.
+// After `vite build --mode perf`: link perf/dist/assets/{proof,play} to public/assets/ (relative symlinks), so the
+// static perf bundle serves the same compressed assets without a second 18 MB copy in git.
 import { mkdirSync, rmSync, symlinkSync } from 'node:fs';
 
 mkdirSync('perf/dist/assets', { recursive: true });
-rmSync('perf/dist/assets/proof', { recursive: true, force: true });
-symlinkSync('../../../public/assets/proof', 'perf/dist/assets/proof', 'dir');
-console.log('perf/dist/assets/proof -> public/assets/proof');
+for (const folder of ['proof', 'play']) {
+  rmSync(`perf/dist/assets/${folder}`, { recursive: true, force: true });
+  symlinkSync(`../../../public/assets/${folder}`, `perf/dist/assets/${folder}`, 'dir');
+  console.log(`perf/dist/assets/${folder} -> public/assets/${folder}`);
+}

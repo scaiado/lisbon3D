@@ -1,5 +1,15 @@
 # Progress
 
+## Stage 3 — Playable slice: Nata Run in the Bica (2026-10-22) — awaiting review
+- kAI stopped the car-design loop: the player car is a plain modern EV saloon (Tesla-like, pearl white, no badges),
+  0.20 MB, with steerable wheels. Effort went into driving instead.
+- `play.html`: fixed-step car physics on the real street (slopes, sprung body, wall and funicular collisions from a
+  baked heightfield + distance field), a chase camera that stays inside the street, synthesised sound, and the
+  pastry run: bakery pickup, five doors down the Bica, handover bays, pastry condition, tips, stars.
+- The funicular runs down the hill as a moving obstacle once the run starts.
+- A scripted careful driver finishes all five deliveries in about 36 s; `tests/play.spec.ts` covers it.
+  Details and known gaps: `docs/play.md`. Frame rate on the M4 not yet measured in play.
+
 ## Stage 2b pass 2 — refinement after review (2026-10-21) — awaiting review
 - kAI's notes: varied mid-ground roofs with depth, less repetition, cooler blue-violet shade with warm sun, a
   composed wide view, a microcar that reads as a small charming car (plus a side profile), a few people and animals.

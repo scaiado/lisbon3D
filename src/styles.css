@@ -214,3 +214,177 @@ kbd {
   color: var(--cream);
   cursor: pointer;
 }
+
+/* ---- Nata Run (play.html) ---- */
+.play-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font: 14px/1.35 ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.play-card {
+  position: absolute;
+  background: rgba(251, 244, 230, 0.92);
+  border: 1px solid var(--cream-edge);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(31, 42, 46, 0.16);
+  padding: 10px 14px;
+}
+
+.play-order {
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: min(440px, calc(100vw - 200px));
+}
+
+.play-order div {
+  display: grid;
+}
+
+.play-order span {
+  color: var(--muted);
+}
+
+.play-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--cream);
+  font-size: 18px;
+  flex: none;
+  transition: transform 0.12s linear;
+}
+
+.play-status {
+  top: 16px;
+  right: 16px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.play-clock {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-natas {
+  display: flex;
+  gap: 4px;
+}
+
+.play-natas i {
+  width: 18px;
+  height: 12px;
+  border-radius: 50% 50% 40% 40%;
+  background: radial-gradient(circle at 40% 40%, #6b3a1e 0 12%, transparent 13%), radial-gradient(circle at 68% 55%, #6b3a1e 0 9%, transparent 10%), #f2c96b;
+  box-shadow: inset 0 -3px 0 #d99a48;
+  transition: opacity 0.3s;
+}
+
+.play-speed {
+  right: 16px;
+  bottom: 16px;
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-speed small {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.play-stats {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  font-size: 11px;
+  color: rgba(31, 42, 46, 0.6);
+}
+
+.play-toast {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 12px 22px;
+  border-radius: 16px;
+  background: rgba(251, 244, 230, 0.95);
+  box-shadow: 0 10px 30px rgba(31, 42, 46, 0.2);
+  transform: translate(-50%, -12px) scale(0.96);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.25s;
+}
+
+.play-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.play-toast strong {
+  font-size: 20px;
+}
+
+.play-toast-damage strong {
+  color: #b5452e;
+}
+
+.play-toast-delivered strong,
+.play-toast-finished strong {
+  color: var(--accent);
+}
+
+.play-start,
+.play-results {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 32px));
+  padding: 20px 24px;
+}
+
+.play-start h1,
+.play-results h1 {
+  margin: 0 0 8px;
+}
+
+.play-start ul {
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.play-go {
+  margin-bottom: 0;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.play-results h1 {
+  font-size: 34px;
+  color: #d99a48;
+  letter-spacing: 4px;
+}
+
+.play-results dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+}
+
+.play-results dd {
+  margin: 0;
+  font-weight: 700;
+}

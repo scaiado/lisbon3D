@@ -2,7 +2,8 @@ Lisbon3D TODO
 =============
 
 Now (needs kAI)
-- [ ] Review visual proof pass 2 (art/renders/browser/, four views incl. carside); approve or redirect.
+- [ ] Play the Bica slice (perf/dist play.html, served from the Mac) and give feedback on driving, camera,
+      hills, collisions and the delivery run. No district expansion before this review.
 - [ ] Safari on the M4: approve the macOS automation prompt, or open perf/dist proof.html?report=1 in Safari
       full screen on the built-in display (see perf/README.md).
 - [ ] Rotate the exposed MapTiler key in the MapTiler account.
@@ -14,7 +15,8 @@ Stage 2b follow-ups (if the direction is approved)
 - [ ] KTX2 textures on a machine with toktx; re-run the renderer benchmark on the proof scene.
 
 Later stages (see plan.md §7)
-- [ ] Stage 3: car + camera feel in the proof street.
+- [x] Stage 3: car + camera feel in the proof street (playable slice, docs/play.md).
+- [ ] Stage 3 follow-ups: measure play fps on the M4; fix dark hanging boards in the Blender kit; tune from kAI's play notes.
 - [ ] Stage 4: district production (kAI runs the one-command OSM export into data/raw/, never shipped).
 - [ ] Stage 5: life + Nata Run. Stage 6: polish + ship.
 - [ ] Keep the WebGPU start-up fallback guard whichever renderer wins.

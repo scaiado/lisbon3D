@@ -4,14 +4,19 @@
 // Joining merges node names; the engine finds backdrop cards by material name instead.
 // KTX2 needs KTX-Software's toktx, which this environment doesn't have; WebP is the documented fallback.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const source = 'art/exports';
-const target = 'public/assets/proof';
 const cli = join('node_modules', '.bin', 'gltf-transform');
-mkdirSync(target, { recursive: true });
+// The player car keeps its node tree (wheels spin and steer), so it is not flattened or joined, and it ships with
+// the game's other data in public/assets/play/.
+const PLAY = new Set(['player_car.glb']);
+const targetOf = (file) => (PLAY.has(file) ? 'public/assets/play' : 'public/assets/proof');
+mkdirSync('public/assets/proof', { recursive: true });
+mkdirSync('public/assets/play', { recursive: true });
+copyFileSync(join(source, 'bica_gameplay.json'), join('public/assets/play', 'bica_gameplay.json'));
 
 const steps = [
   ['dedup'],
@@ -28,8 +33,10 @@ for (const file of readdirSync(source).filter((name) => name.endsWith('.glb'))) 
   let input = join(source, file);
   const scratch = join(tmpdir(), `proof-${process.pid}`);
   mkdirSync(scratch, { recursive: true });
-  steps.forEach(([command, ...args], index) => {
-    const output = index === steps.length - 1 ? join(target, file) : join(scratch, `${index}-${file}`);
+  const target = targetOf(file);
+  const fileSteps = PLAY.has(file) ? steps.filter(([command]) => command !== 'flatten' && command !== 'join') : steps;
+  fileSteps.forEach(([command, ...args], index) => {
+    const output = index === fileSteps.length - 1 ? join(target, file) : join(scratch, `${index}-${file}`);
     execFileSync(cli, [command, input, output, ...args], { stdio: ['ignore', 'ignore', 'inherit'] });
     input = output;
   });
